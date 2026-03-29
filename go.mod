@@ -1,4 +1,4 @@
-module tea.kareha.org/lab/termi
+module tea.kareha.org/cup/termi
 
 go 1.25.0
 
