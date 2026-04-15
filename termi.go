@@ -52,7 +52,13 @@ func ShowCursor() {
 func Size() (int, int) {
 	w, h, err := term.GetSize(int(os.Stdout.Fd()))
 	if err != nil {
-		return 80, 24
+		w, h = 80, 24
+	}
+	if w < 1 {
+		w = 80
+	}
+	if h < 1 {
+		h = 24
 	}
 	return w, h
 }
