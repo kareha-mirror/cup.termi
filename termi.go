@@ -73,8 +73,12 @@ func LoadCursor() {
 	fmt.Print("\x1b[u")
 }
 
-func ScrollRange(top, bottom int) {
-	fmt.Printf("\x1b[%d;%dr", top+1, bottom)
+func ScrollRange(top int, size int) {
+	fmt.Printf("\x1b[%d;%dr", top+1, top + size)
+}
+
+func ScrollReset() {
+	fmt.Printf("\x1b[r")
 }
 
 func ClearTail() {
