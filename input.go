@@ -33,6 +33,7 @@ func readByte() byte {
 	if len(buf) > 0 {
 		b := buf[0]
 		buf = buf[1:]
+		fireEscape(b)
 		return b
 	}
 
@@ -41,6 +42,7 @@ func readByte() byte {
 	if err != nil {
 		panic(err)
 	}
+	fireEscape(b[0])
 	return b[0]
 }
 
@@ -105,4 +107,23 @@ func ReadKey() Key {
 
 	buf = append(buf, seq[1:]...)
 	return Key{KeyRune, rune(seq[0]), ""}
+}
+
+var escapeListeners = make([]func(bool), 0)
+
+func AddEscapeListener(f func(bool)) {
+	escapeListeners = append(escapeListeners, f)
+}
+
+var prevEsc = false
+
+func fireEscape(b byte) {
+	esc := b == 0x1b
+	if esc == prevEsc {
+		return
+	}
+	for _, f := range escapeListeners {
+		f(esc)
+	}
+	prevEsc = esc
 }

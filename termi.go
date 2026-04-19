@@ -80,7 +80,7 @@ func LoadCursor() {
 }
 
 func ScrollRange(top int, size int) {
-	fmt.Printf("\x1b[%d;%dr", top+1, top + size)
+	fmt.Printf("\x1b[%d;%dr", top+1, top+size)
 }
 
 func ScrollReset() {
