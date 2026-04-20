@@ -109,10 +109,28 @@ func ReadKey() Key {
 	return Key{KeyRune, rune(seq[0]), ""}
 }
 
-var escapeListeners = make([]func(bool), 0)
+type EscapeListener *func(bool)
 
-func AddEscapeListener(f func(bool)) {
+var escapeListeners = make([]EscapeListener, 0)
+
+func AddEscapeListener(f EscapeListener) {
 	escapeListeners = append(escapeListeners, f)
+}
+
+func RemoveEscapeListener(f EscapeListener) bool {
+	for i := 0; i < len(escapeListeners); i++ {
+		if escapeListeners[i] == f {
+			if i+1 < len(escapeListeners) {
+				escapeListeners = append(
+					escapeListeners[:i], escapeListeners[i+1:]...,
+				)
+			} else {
+				escapeListeners = escapeListeners[:i]
+			}
+			return true
+		}
+	}
+	return false
 }
 
 var prevEsc = false
@@ -123,7 +141,7 @@ func fireEscape(b byte) {
 		return
 	}
 	for _, f := range escapeListeners {
-		f(esc)
+		(*f)(esc)
 	}
 	prevEsc = esc
 }
