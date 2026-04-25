@@ -39,3 +39,7 @@ func (b *StringBuilder) RemoveHead() bool {
 	b.buf = b.buf[1:]
 	return true
 }
+
+func (b *StringBuilder) Substring(from, to int) string {
+	return string(b.buf[from:to])
+}
