@@ -24,12 +24,18 @@ func (b *RuneBuf) Len() int {
 	return len(b.buf)
 }
 
-func (b *RuneBuf) RemoveTail() bool {
-	if len(b.buf) == 0 {
-		return false
+func (b *RuneBuf) Head() (rune, bool) {
+	if len(b.buf) < 1 {
+		return 0, false
 	}
-	b.buf = b.buf[:len(b.buf)-1]
-	return true
+	return b.buf[0], true
+}
+
+func (b *RuneBuf) Tail() (rune, bool) {
+	if len(b.buf) < 1 {
+		return 0, false
+	}
+	return b.buf[len(b.buf) - 1], true
 }
 
 func (b *RuneBuf) RemoveHead() bool {
@@ -40,6 +46,23 @@ func (b *RuneBuf) RemoveHead() bool {
 	return true
 }
 
-func (b *RuneBuf) Substring(from, to int) string {
-	return string(b.buf[from:to])
+func (b *RuneBuf) RemoveTail() bool {
+	if len(b.buf) == 0 {
+		return false
+	}
+	b.buf = b.buf[:len(b.buf)-1]
+	return true
+}
+
+func (b *RuneBuf) Substring(from, to int) (string, bool) {
+	if from < 0 || from > len(b.buf) - 1 {
+		return "", false
+	}
+	if to < 0 || to > len(b.buf) {
+		return "", false
+	}
+	if to < from {
+		return "", false
+	}
+	return string(b.buf[from:to]), true
 }
