@@ -35,7 +35,7 @@ func (b *RuneBuf) Tail() (rune, bool) {
 	if len(b.buf) < 1 {
 		return 0, false
 	}
-	return b.buf[len(b.buf) - 1], true
+	return b.buf[len(b.buf)-1], true
 }
 
 func (b *RuneBuf) RemoveHead() bool {
@@ -55,7 +55,7 @@ func (b *RuneBuf) RemoveTail() bool {
 }
 
 func (b *RuneBuf) Substring(from, to int) (string, bool) {
-	if from < 0 || from > len(b.buf) - 1 {
+	if from < 0 || from > len(b.buf)-1 {
 		return "", false
 	}
 	if to < 0 || to > len(b.buf) {
