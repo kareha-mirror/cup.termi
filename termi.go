@@ -90,12 +90,3 @@ func ScrollReset() {
 func ClearTail() {
 	fmt.Print("\x1b[K")
 }
-
-func ResetColor() {
-	fmt.Print("\x1b[0m")
-}
-
-func DefaultColor() {
-	fmt.Print("\x1b[39m") // default fg
-	fmt.Print("\x1b[49m") // default bg
-}
