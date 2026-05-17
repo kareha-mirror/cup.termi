@@ -10,10 +10,14 @@ type KeyKind int
 
 const (
 	KeyRune KeyKind = iota
+
 	KeyUp
 	KeyDown
 	KeyRight
 	KeyLeft
+
+	KeyBeginPaste
+	KeyEndPaste
 )
 
 type Key struct {
@@ -103,6 +107,35 @@ func ReadKey() Key {
 		return Key{KeyRight, 0, string(seq)}
 	case 'D':
 		return Key{KeyLeft, 0, string(seq)}
+	}
+
+	if b == '2' {
+		b = readByte()
+		seq = append(seq, b)
+		if b != '0' {
+			buf = append(buf, seq[1:]...)
+			return Key{KeyRune, rune(seq[0]), ""}
+		}
+
+		b = readByte()
+		seq = append(seq, b)
+		if b != '0' && b != '1' {
+			buf = append(buf, seq[1:]...)
+			return Key{KeyRune, rune(seq[0]), ""}
+		}
+
+		b2 := readByte()
+		seq = append(seq, b2)
+		if b2 != '~' {
+			buf = append(buf, seq[1:]...)
+			return Key{KeyRune, rune(seq[0]), ""}
+		}
+
+		if b == '0' {
+			return Key{KeyBeginPaste, 0, string(seq)}
+		} else {
+			return Key{KeyEndPaste, 0, string(seq)}
+		}
 	}
 
 	buf = append(buf, seq[1:]...)
