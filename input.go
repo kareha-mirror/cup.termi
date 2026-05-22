@@ -18,6 +18,8 @@ const (
 
 	KeyBeginPaste
 	KeyEndPaste
+
+	KeyUnknown
 )
 
 type Key struct {
@@ -89,6 +91,19 @@ func ReadKey() Key {
 
 	seq := []byte{b}
 
+	skip := func(b byte) {
+		if b >= 0x40 && b <= 0x7e {
+			return
+		}
+		for {
+			b = readByte()
+			seq = append(seq, b)
+			if b >= 0x40 && b <= 0x7e {
+				return
+			}
+		}
+	}
+
 	b = readByte()
 	seq = append(seq, b)
 	if b != '[' {
@@ -113,22 +128,22 @@ func ReadKey() Key {
 		b = readByte()
 		seq = append(seq, b)
 		if b != '0' {
-			buf = append(buf, seq[1:]...)
-			return Key{KeyRune, rune(seq[0]), ""}
+			skip(b)
+			return Key{KeyUnknown, 0, string(seq)}
 		}
 
 		b = readByte()
 		seq = append(seq, b)
 		if b != '0' && b != '1' {
-			buf = append(buf, seq[1:]...)
-			return Key{KeyRune, rune(seq[0]), ""}
+			skip(b)
+			return Key{KeyUnknown, 0, string(seq)}
 		}
 
 		b2 := readByte()
 		seq = append(seq, b2)
 		if b2 != '~' {
-			buf = append(buf, seq[1:]...)
-			return Key{KeyRune, rune(seq[0]), ""}
+			skip(b2)
+			return Key{KeyUnknown, 0, string(seq)}
 		}
 
 		if b == '0' {
@@ -138,8 +153,8 @@ func ReadKey() Key {
 		}
 	}
 
-	buf = append(buf, seq[1:]...)
-	return Key{KeyRune, rune(seq[0]), ""}
+	skip(b)
+	return Key{KeyUnknown, 0, string(seq)}
 }
 
 type EscapeListener *func(bool)
