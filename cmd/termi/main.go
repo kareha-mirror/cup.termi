@@ -38,12 +38,12 @@ func draw() {
 	for j := 0; j < 16; j++ {
 		for i := 0; i < 16; i++ {
 			idx := 16*j + i
-			fmt.Print(termi.SetFgColor(termi.Palette[idx]))
+			fmt.Print(termi.Palette(idx).Fg())
 			fmt.Printf(" %3d", idx)
 		}
 		fmt.Print("\r\n")
 	}
-	fmt.Print(termi.ResetColor())
+	fmt.Print(termi.ResetAll)
 
 	fmt.Print(termi.ShowCursor())
 }

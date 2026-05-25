@@ -7,14 +7,7 @@ import (
 	"strings"
 )
 
-func ResetColor() string {
-	return "\x1b[0m"
-}
-
-func DefaultColor() string {
-	return "\x1b[39m" + // default fg
-		"\x1b[49m" // default bg
-}
+const ResetAll = "\x1b[0m"
 
 type ColorMode int
 
@@ -41,12 +34,23 @@ func SetColorMode(mode ColorMode) {
 }
 
 type Color struct {
+	def     bool
 	indexed bool
 	index   uint8
 	r, g, b uint8
 }
 
-func (c Color) IsIndex() bool {
+var DefaultColor = Color{true, false, 0, 0, 0, 0}
+
+func NewRGB(r, g, b uint8) Color {
+	return Color{false, false, 0, r, g, b}
+}
+
+func (c Color) Default() bool {
+	return c.def
+}
+
+func (c Color) Indexed() bool {
 	return c.indexed
 }
 
@@ -54,60 +58,66 @@ func (c Color) Index() uint8 {
 	return c.index
 }
 
-func (c Color) R() uint8 {
-	return c.r
-}
-
-func (c Color) G() uint8 {
-	return c.g
-}
-
-func (c Color) B() uint8 {
-	return c.b
+func (c Color) RGB() (uint8, uint8, uint8) {
+	return c.r, c.g, c.b
 }
 
 // normal
-var Black = Color{true, 0, 0, 0, 0}
-var Red = Color{true, 1, 128, 0, 0}
-var Green = Color{true, 2, 0, 128, 0}
-var Yellow = Color{true, 3, 128, 128, 0}
-var Blue = Color{true, 4, 0, 0, 128}
-var Magenta = Color{true, 5, 128, 0, 128}
-var Cyan = Color{true, 6, 0, 128, 128}
-var White = Color{true, 7, 192, 192, 192}
+var Black = Color{false, true, 0, 0, 0, 0}
+var Red = Color{false, true, 1, 128, 0, 0}
+var Green = Color{false, true, 2, 0, 128, 0}
+var Yellow = Color{false, true, 3, 128, 128, 0}
+var Blue = Color{false, true, 4, 0, 0, 128}
+var Magenta = Color{false, true, 5, 128, 0, 128}
+var Cyan = Color{false, true, 6, 0, 128, 128}
+var White = Color{false, true, 7, 192, 192, 192}
 
 // bright
-var BrightBlack = Color{true, 8, 128, 128, 128}
-var BrightRed = Color{true, 9, 255, 0, 0}
-var BrightGreen = Color{true, 10, 0, 255, 0}
-var BrightYellow = Color{true, 11, 255, 255, 0}
-var BrightBlue = Color{true, 12, 0, 0, 255}
-var BrightMagenta = Color{true, 13, 255, 0, 255}
-var BrightCyan = Color{true, 14, 0, 255, 255}
-var BrightWhite = Color{true, 15, 255, 255, 255}
+var BrightBlack = Color{false, true, 8, 128, 128, 128}
+var BrightRed = Color{false, true, 9, 255, 0, 0}
+var BrightGreen = Color{false, true, 10, 0, 255, 0}
+var BrightYellow = Color{false, true, 11, 255, 255, 0}
+var BrightBlue = Color{false, true, 12, 0, 0, 255}
+var BrightMagenta = Color{false, true, 13, 255, 0, 255}
+var BrightCyan = Color{false, true, 14, 0, 255, 255}
+var BrightWhite = Color{false, true, 15, 255, 255, 255}
 
-var Palette = make([]Color, 256)
+var palette = make([]Color, 256)
+
+func Palette(i int) Color {
+	if i < 0 || i >= 256 {
+		return DefaultColor
+	}
+	return palette[i]
+}
+
+func SetPalette(i int, r, g, b uint8) {
+	if i < 0 || i >= 256 {
+		return
+	}
+	palette[i] = Color{false, true, uint8(i), r, g, b}
+}
 
 func init() {
 	// normal
-	Palette[0] = Black
-	Palette[1] = Red
-	Palette[2] = Green
-	Palette[3] = Yellow
-	Palette[4] = Blue
-	Palette[5] = Magenta
-	Palette[6] = Cyan
-	Palette[7] = White
+	palette[0] = Black
+	palette[1] = Red
+	palette[2] = Green
+	palette[3] = Yellow
+	palette[4] = Blue
+	palette[5] = Magenta
+	palette[6] = Cyan
+	palette[7] = White
 
 	// bright
-	Palette[8] = BrightBlack
-	Palette[9] = BrightRed
-	Palette[10] = BrightGreen
-	Palette[11] = BrightYellow
-	Palette[12] = BrightBlue
-	Palette[13] = BrightMagenta
-	Palette[14] = BrightCyan
-	Palette[15] = BrightWhite
+	palette[8] = BrightBlack
+	palette[9] = BrightRed
+	palette[10] = BrightGreen
+	palette[11] = BrightYellow
+	palette[12] = BrightBlue
+	palette[13] = BrightMagenta
+	palette[14] = BrightCyan
+	palette[15] = BrightWhite
 
 	level := []uint8{0, 95, 135, 175, 215, 255}
 
@@ -115,7 +125,8 @@ func init() {
 		for g := 0; g < 6; g++ {
 			for b := 0; b < 6; b++ {
 				i := r*36 + g*6 + b
-				Palette[16+i] = Color{
+				palette[16+i] = Color{
+					false,
 					true,
 					uint8(16 + i),
 					level[r],
@@ -128,7 +139,8 @@ func init() {
 
 	for k := 0; k < 24; k++ {
 		v := 8 + k*10
-		Palette[232+k] = Color{
+		palette[232+k] = Color{
+			false,
 			true,
 			uint8(232 + k),
 			uint8(v),
@@ -159,6 +171,7 @@ func parseHexColor(s string) (Color, error) {
 	}
 
 	return Color{
+		false,
 		false,
 		0,
 		uint8(r),
@@ -191,6 +204,9 @@ var brightColors = map[string]Color{
 
 func parseNamedColor(s string) (Color, error) {
 	lower := strings.ToLower(s)
+	if strings.Contains(lower, "default") {
+		return DefaultColor, nil
+	}
 	var m map[string]Color
 	if strings.Contains(lower, "bright") {
 		m = brightColors
@@ -217,7 +233,7 @@ func ParseColor(s string) (Color, error) {
 	// try parse as palette index
 	i, err := strconv.ParseUint(s, 10, 8)
 	if err == nil {
-		return Palette[i], nil
+		return palette[i], nil
 	}
 
 	// try parse as color name
@@ -229,7 +245,7 @@ func ParseColor(s string) (Color, error) {
 	return Color{}, fmt.Errorf("invalid color format")
 }
 
-func getColor16Index(c Color) uint8 {
+func (c Color) index16() uint8 {
 	r := int(c.r)
 	g := int(c.g)
 	b := int(c.b)
@@ -281,61 +297,31 @@ func getColor16Index(c Color) uint8 {
 	return 4 + bright // blue
 }
 
-func getColor256Index(c Color) uint8 {
+func (c Color) index256() uint8 {
 	r := (int(c.r) + 21) * 5 / 255
 	g := (int(c.g) + 21) * 5 / 255
 	b := (int(c.b) + 21) * 5 / 255
 	return uint8(16 + 36*r + 6*g + b)
 }
 
-func CastColor(c Color) Color {
+func (c Color) cast() Color {
 	switch colorMode {
 	case ColorMode16:
 		if c.indexed && c.index < 16 {
 			return c
 		}
-		i := getColor16Index(c)
-		return Palette[i]
+		return palette[c.index16()]
 	case ColorMode256:
 		if c.indexed {
 			return c
 		}
-		i := getColor256Index(c)
-		return Palette[i]
+		return palette[c.index256()]
 	default: // ColorModeTrue
 		return c
 	}
 }
 
-func SetFgColor(c Color) string {
-	c = CastColor(c)
-	switch colorMode {
-	case ColorMode16:
-		return setFgColor16(c)
-	case ColorMode256:
-		return setFgColor256(c)
-	case ColorModeTrue:
-		return setFgColorTrue(c)
-	default:
-		return ""
-	}
-}
-
-func SetBgColor(c Color) string {
-	c = CastColor(c)
-	switch colorMode {
-	case ColorMode16:
-		return setBgColor16(c)
-	case ColorMode256:
-		return setBgColor256(c)
-	case ColorModeTrue:
-		return setBgColorTrue(c)
-	default:
-		return ""
-	}
-}
-
-func setFgColor16(c Color) string {
+func (c Color) fg16() string {
 	var code uint8
 	if c.index >= 8 {
 		code = 90 + c.index - 8
@@ -345,7 +331,7 @@ func setFgColor16(c Color) string {
 	return fmt.Sprintf("\x1b[%dm", code)
 }
 
-func setBgColor16(c Color) string {
+func (c Color) bg16() string {
 	var code uint8
 	if c.index >= 8 {
 		code = 100 + c.index - 8
@@ -355,18 +341,50 @@ func setBgColor16(c Color) string {
 	return fmt.Sprintf("\x1b[%dm", code)
 }
 
-func setFgColor256(c Color) string {
+func (c Color) fg256() string {
 	return fmt.Sprintf("\x1b[38;5;%dm", c.index)
 }
 
-func setBgColor256(c Color) string {
+func (c Color) bg256() string {
 	return fmt.Sprintf("\x1b[48;5;%dm", c.index)
 }
 
-func setFgColorTrue(c Color) string {
+func (c Color) fgTrue() string {
 	return fmt.Sprintf("\x1b[38;2;%d;%d;%dm", c.r, c.g, c.b)
 }
 
-func setBgColorTrue(c Color) string {
+func (c Color) bgTrue() string {
 	return fmt.Sprintf("\x1b[48;2;%d;%d;%dm", c.r, c.g, c.b)
+}
+
+func (c Color) Fg() string {
+	if c.def {
+		return "\x1b[39m"
+	}
+	switch colorMode {
+	case ColorMode16:
+		return c.cast().fg16()
+	case ColorMode256:
+		return c.cast().fg256()
+	case ColorModeTrue:
+		return c.cast().fgTrue()
+	default:
+		return "(unknown color mode)"
+	}
+}
+
+func (c Color) Bg() string {
+	if c.def {
+		return "\x1b[49m"
+	}
+	switch colorMode {
+	case ColorMode16:
+		return c.cast().bg16()
+	case ColorMode256:
+		return c.cast().bg256()
+	case ColorModeTrue:
+		return c.cast().bgTrue()
+	default:
+		return "(unknown color mode)"
+	}
 }

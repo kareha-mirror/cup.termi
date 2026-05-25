@@ -68,7 +68,7 @@ func EnableInvert() string {
 }
 
 func DisableInvert() string {
-	return "\x1b[0m"
+	return "\x1b[27m"
 }
 
 func SaveCursor() string {
