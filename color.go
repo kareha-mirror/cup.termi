@@ -246,55 +246,71 @@ func ParseColor(s string) (Color, error) {
 }
 
 func (c Color) index16() uint8 {
+	if c.indexed && c.index < 16 {
+		return c.index
+	}
+
 	r := int(c.r)
 	g := int(c.g)
 	b := int(c.b)
 
-	mx := max(r, g, b)
-	mn := min(r, g, b)
-	brightness := (r + g + b) / 3
-
-	if mx-mn < 32 { // gray
-		if brightness < 64 {
-			return 0 // black
-		}
-		if brightness >= 192 {
-			return 7 + 8 // white
-		}
-		return 7 // white
-	}
+	brightness := (299*r + 587*g + 114*b) / 1000
 
 	var bright uint8 = 0
-	if brightness > 128 {
+	if brightness >= 160 {
 		bright = 8
 	}
 
-	if r >= g && r >= b {
-		if g >= 128 {
-			return 3 + bright // yellow
+	mx := max(r, g, b)
+	mn := min(r, g, b)
+
+	if mx-mn >= 32 { // colored
+		if r >= g && r >= b {
+			if g+b < 256 {
+				return 1 + bright // red
+			}
+			if g >= b {
+				return 3 + bright // yellow
+			}
+			if b >= g {
+				return 5 + bright // magenta
+			}
 		}
-		if b >= 128 {
-			return 5 + bright // magenta
+		if g >= b && g >= r {
+			if b+r < 256 {
+				return 2 + bright // green
+			}
+			if b >= r {
+				return 6 + bright // cyan
+			}
+			if r >= b {
+				return 3 + bright // yellow
+			}
 		}
-		return 1 + bright // red
-	}
-	if g >= r && g >= b {
-		if r >= 128 {
-			return 3 + bright // yellow
+		if b >= r && b >= g {
+			if r+g < 256 {
+				return 4 + bright // blue
+			}
+			if r >= g {
+				return 5 + bright // magenta
+			}
+			if g >= r {
+				return 6 + bright // cyan
+			}
 		}
-		if b >= 128 {
-			return 6 + bright // cyan
-		}
-		return 2 + bright // green
 	}
-	// b >= r && b >= g
-	if r >= 128 {
-		return 5 + bright // magenta
+
+	// gray
+	if brightness < 64 {
+		return 0 // black
 	}
-	if g >= 128 {
-		return 6 + bright // cyan
+	if brightness < 128 {
+		return 0 + 8 // bright black
 	}
-	return 4 + bright // blue
+	if brightness < 192 {
+		return 7 // white
+	}
+	return 7 + 8 // bright white
 }
 
 func (c Color) index256() uint8 {
