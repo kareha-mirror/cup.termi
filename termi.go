@@ -29,24 +29,24 @@ func Cooked() {
 	state = nil
 }
 
-func Clear() {
-	fmt.Print("\x1b[2J")
+func Clear() string {
+	return "\x1b[2J"
 }
 
-func HomeCursor() {
-	fmt.Print("\x1b[H")
+func HomeCursor() string {
+	return "\x1b[H"
 }
 
-func MoveCursor(x, y int) {
-	fmt.Printf("\x1b[%d;%dH", y+1, x+1)
+func MoveCursor(x, y int) string {
+	return fmt.Sprintf("\x1b[%d;%dH", y+1, x+1)
 }
 
-func HideCursor() {
-	fmt.Print("\x1b[?25l")
+func HideCursor() string {
+	return "\x1b[?25l"
 }
 
-func ShowCursor() {
-	fmt.Print("\x1b[?25h")
+func ShowCursor() string {
+	return "\x1b[?25h"
 }
 
 func Size() (int, int) {
@@ -63,30 +63,30 @@ func Size() (int, int) {
 	return w, h
 }
 
-func EnableInvert() {
-	fmt.Print("\x1b[7m")
+func EnableInvert() string {
+	return "\x1b[7m"
 }
 
-func DisableInvert() {
-	fmt.Print("\x1b[0m")
+func DisableInvert() string {
+	return "\x1b[0m"
 }
 
-func SaveCursor() {
-	fmt.Print("\x1b[s")
+func SaveCursor() string {
+	return "\x1b[s"
 }
 
-func LoadCursor() {
-	fmt.Print("\x1b[u")
+func LoadCursor() string {
+	return "\x1b[u"
 }
 
-func ScrollRange(top int, size int) {
-	fmt.Printf("\x1b[%d;%dr", top+1, top+size)
+func ScrollRange(top int, size int) string {
+	return fmt.Sprintf("\x1b[%d;%dr", top+1, top+size)
 }
 
-func ScrollReset() {
-	fmt.Printf("\x1b[r")
+func ScrollReset() string {
+	return "\x1b[r"
 }
 
-func ClearTail() {
-	fmt.Print("\x1b[K")
+func ClearTail() string {
+	return "\x1b[K"
 }

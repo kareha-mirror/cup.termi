@@ -1,7 +1,6 @@
 package termi
 
 import (
-	"fmt"
 	"unicode"
 )
 
@@ -69,28 +68,20 @@ func StringWidth(s string, col int) int {
 	return sum
 }
 
-func Print(s string) {
-	fmt.Print(s)
-}
-
-func Printf(format string, a ...any) (n int, err error) {
-	s := fmt.Sprintf(format, a...)
-	Print(s)
-	return len(s), nil
-}
-
-func Draw(s string) {
+func Draw(s string) string {
+	buf := []rune{}
 	x := 0
 	for _, r := range s {
 		if r == '\t' {
 			spaces := tabWidth - (x % tabWidth)
 			for i := 0; i < spaces; i++ {
-				fmt.Print(" ")
+				buf = append(buf, ' ')
 			}
 			x += spaces
 		} else {
-			fmt.Printf("%c", r)
+			buf = append(buf, r)
 			x += runeWidth(r, x)
 		}
 	}
+	return string(buf)
 }

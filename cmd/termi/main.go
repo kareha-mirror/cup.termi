@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"tea.kareha.org/cup/termi"
 )
 
@@ -9,45 +11,47 @@ func start() {
 }
 
 func finish() {
-	termi.Clear()
-	termi.HomeCursor()
+	fmt.Print(termi.Clear())
+	fmt.Print(termi.HomeCursor())
 	termi.Cooked()
-	termi.ShowCursor()
+	fmt.Print(termi.ShowCursor())
 }
 
 func draw() {
 	w, h := termi.Size()
 
-	termi.HideCursor()
+	fmt.Print(termi.HideCursor())
 
-	termi.Clear()
-	termi.HomeCursor()
+	fmt.Print(termi.Clear())
+	fmt.Print(termi.HomeCursor())
 
-	termi.MoveCursor(0, 0)
-	termi.Print("+")
-	termi.MoveCursor(w-1, 0)
-	termi.Print("+")
-	termi.MoveCursor(0, h-1)
-	termi.Print("+")
-	termi.MoveCursor(w-1, h-1)
-	termi.Print("+")
+	fmt.Print(termi.MoveCursor(0, 0))
+	fmt.Print("+")
+	fmt.Print(termi.MoveCursor(w-1, 0))
+	fmt.Print("+")
+	fmt.Print(termi.MoveCursor(0, h-1))
+	fmt.Print("+")
+	fmt.Print(termi.MoveCursor(w-1, h-1))
+	fmt.Print("+")
 
-	termi.MoveCursor(1, 2)
+	fmt.Print(termi.MoveCursor(0, 2))
 	for j := 0; j < 16; j++ {
 		for i := 0; i < 16; i++ {
 			idx := 16*j + i
-			termi.SetFgColor(termi.Palette[idx])
-			termi.Printf(" %3d", idx)
+			fmt.Print(termi.SetFgColor(termi.Palette[idx]))
+			fmt.Printf(" %3d", idx)
 		}
-		termi.Print("\r\n")
+		fmt.Print("\r\n")
 	}
-	termi.ResetColor()
+	fmt.Print(termi.ResetColor())
 
-	termi.ShowCursor()
+	fmt.Print(termi.ShowCursor())
 }
 
 func mainLoop() {
 	for {
+		draw()
+
 		key := termi.ReadKey()
 		switch key.Kind {
 		case termi.KeyRune:
@@ -56,7 +60,6 @@ func mainLoop() {
 				return
 			}
 		}
-		draw()
 	}
 }
 

@@ -7,16 +7,16 @@ import (
 	"strings"
 )
 
-func ResetColor() {
-	fmt.Print("\x1b[0m")
+func ResetColor() string {
+	return "\x1b[0m"
 }
 
-func DefaultColor() {
-	fmt.Print("\x1b[39m") // default fg
-	fmt.Print("\x1b[49m") // default bg
+func DefaultColor() string {
+	return "\x1b[39m" + // default fg
+		"\x1b[49m" // default bg
 }
 
-type ColorMode uint8
+type ColorMode int
 
 const (
 	ColorMode16 ColorMode = iota
@@ -307,62 +307,66 @@ func CastColor(c Color) Color {
 	}
 }
 
-func SetFgColor(c Color) {
+func SetFgColor(c Color) string {
 	c = CastColor(c)
 	switch colorMode {
 	case ColorMode16:
-		setFgColor16(c)
+		return setFgColor16(c)
 	case ColorMode256:
-		setFgColor256(c)
+		return setFgColor256(c)
 	case ColorModeTrue:
-		setFgColorTrue(c)
+		return setFgColorTrue(c)
+	default:
+		return ""
 	}
 }
 
-func SetBgColor(c Color) {
+func SetBgColor(c Color) string {
 	c = CastColor(c)
 	switch colorMode {
 	case ColorMode16:
-		setBgColor16(c)
+		return setBgColor16(c)
 	case ColorMode256:
-		setBgColor256(c)
+		return setBgColor256(c)
 	case ColorModeTrue:
-		setBgColorTrue(c)
+		return setBgColorTrue(c)
+	default:
+		return ""
 	}
 }
 
-func setFgColor16(c Color) {
+func setFgColor16(c Color) string {
 	var code uint8
 	if c.index >= 8 {
 		code = 90 + c.index - 8
 	} else {
 		code = 30 + c.index
 	}
-	fmt.Printf("\x1b[%dm", code)
+	return fmt.Sprintf("\x1b[%dm", code)
 }
 
-func setBgColor16(c Color) {
+func setBgColor16(c Color) string {
 	var code uint8
 	if c.index >= 8 {
 		code = 100 + c.index - 8
 	} else {
 		code = 40 + c.index
 	}
-	fmt.Printf("\x1b[%dm", code)
+	return fmt.Sprintf("\x1b[%dm", code)
 }
 
-func setFgColor256(c Color) {
-	fmt.Printf("\x1b[38;5;%dm", c.index)
+func setFgColor256(c Color) string {
+	return fmt.Sprintf("\x1b[38;5;%dm", c.index)
 }
 
-func setBgColor256(c Color) {
-	fmt.Printf("\x1b[48;5;%dm", c.index)
+func setBgColor256(c Color) string {
+	return fmt.Sprintf("\x1b[48;5;%dm", c.index)
 }
 
-func setFgColorTrue(c Color) {
-	fmt.Printf("\x1b[38;2;%d;%d;%dm", c.r, c.g, c.b)
+func setFgColorTrue(c Color) string {
+	return fmt.Sprintf("\x1b[38;2;%d;%d;%dm", c.r, c.g, c.b)
 }
 
-func setBgColorTrue(c Color) {
-	fmt.Printf("\x1b[48;2;%d;%d;%dm", c.r, c.g, c.b)
+func setBgColorTrue(c Color) string {
+	return fmt.Sprintf("\x1b[48;2;%d;%d;%dm", c.r, c.g, c.b)
 }
