@@ -7,10 +7,7 @@ import (
 )
 
 func drawColor() {
-	fmt.Print(termi.HideCursor())
-
-	fmt.Print(termi.Clear())
-	fmt.Print(termi.HomeCursor())
+	fmt.Print(termi.HomeCursor)
 
 	for j := 0; j < 16; j++ {
 		for i := 0; i < 16; i++ {
@@ -20,22 +17,11 @@ func drawColor() {
 		}
 		fmt.Print("\r\n")
 	}
-	fmt.Print(termi.ResetAll)
-
-	fmt.Print(termi.ShowCursor())
+	fmt.Print(termi.ResetAttr)
 }
 
 func colorMain() {
-	for {
-		drawColor()
+	drawColor()
 
-		key := termi.ReadKey()
-		switch key.Kind {
-		case termi.KeyRune:
-			switch key.Rune {
-			case termi.RuneEscape:
-				return
-			}
-		}
-	}
+	termi.ReadSeq()
 }

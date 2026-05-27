@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const ResetAll = "\x1b[0m"
+const ResetAttr = "\x1b[0m" // "\x1b[m"
 
 type ColorMode int
 
@@ -119,34 +119,24 @@ func init() {
 	palette[14] = BrightCyan
 	palette[15] = BrightWhite
 
+	// cube colors
 	level := []uint8{0, 95, 135, 175, 215, 255}
-
 	for r := 0; r < 6; r++ {
 		for g := 0; g < 6; g++ {
 			for b := 0; b < 6; b++ {
-				i := r*36 + g*6 + b
-				palette[16+i] = Color{
-					false,
-					true,
-					uint8(16 + i),
-					level[r],
-					level[g],
-					level[b],
+				i := uint8(16 + r*36 + g*6 + b)
+				palette[i] = Color{
+					false, true, i, level[r], level[g], level[b],
 				}
 			}
 		}
 	}
 
+	// grays
 	for k := 0; k < 24; k++ {
-		v := 8 + k*10
-		palette[232+k] = Color{
-			false,
-			true,
-			uint8(232 + k),
-			uint8(v),
-			uint8(v),
-			uint8(v),
-		}
+		i := uint8(232 + k)
+		v := uint8(8 + k*10)
+		palette[i] = Color{false, true, i, v, v, v}
 	}
 }
 
@@ -170,14 +160,7 @@ func parseHexColor(s string) (Color, error) {
 		return Color{}, err
 	}
 
-	return Color{
-		false,
-		false,
-		0,
-		uint8(r),
-		uint8(g),
-		uint8(b),
-	}, nil
+	return Color{false, false, 0, uint8(r), uint8(g), uint8(b)}, nil
 }
 
 var normalColors = map[string]Color{
@@ -222,7 +205,7 @@ func parseNamedColor(s string) (Color, error) {
 }
 
 func ParseColor(s string) (Color, error) {
-	// try pase as RGB hex
+	// try parse as RGB hex
 	if len(s) == 6 {
 		c, err := parseHexColor(s)
 		if err == nil {
@@ -246,6 +229,7 @@ func ParseColor(s string) (Color, error) {
 }
 
 func (c Color) index16() uint8 {
+	// 16 colors
 	if c.indexed && c.index < 16 {
 		return c.index
 	}
@@ -264,7 +248,7 @@ func (c Color) index16() uint8 {
 	mx := max(r, g, b)
 	mn := min(r, g, b)
 
-	if mx-mn >= 32 { // colored
+	if mx-mn >= 32 { // cube colors
 		if r >= g && r >= b {
 			if g+b < 256 {
 				return 1 + bright // red
@@ -300,7 +284,7 @@ func (c Color) index16() uint8 {
 		}
 	}
 
-	// gray
+	// grays
 	if brightness < 64 {
 		return 0 // black
 	}
@@ -314,6 +298,7 @@ func (c Color) index16() uint8 {
 }
 
 func (c Color) index256() uint8 {
+	// only use cube colors
 	r := (int(c.r) + 21) * 5 / 255
 	g := (int(c.g) + 21) * 5 / 255
 	b := (int(c.b) + 21) * 5 / 255

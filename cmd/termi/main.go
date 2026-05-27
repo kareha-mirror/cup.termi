@@ -9,18 +9,24 @@ import (
 
 func usage() {
 	fmt.Printf("Usage: %s COMMAND\n", os.Args[0])
-	fmt.Print("COMMAND: color key size\n")
+	fmt.Print("COMMAND:\n")
+	fmt.Print("  color: show 256 color table\n")
+	fmt.Print("  seq: key / sequence tester\n")
+	fmt.Print("  size: detect screen size and show corners\n")
 }
 
 func start() {
 	termi.Raw()
+	fmt.Print(termi.Clear)
+	fmt.Print(termi.HideCursor)
+	fmt.Print(termi.HomeCursor)
 }
 
 func finish() {
-	fmt.Print(termi.Clear())
-	fmt.Print(termi.HomeCursor())
+	fmt.Print(termi.Clear)
+	fmt.Print(termi.HomeCursor)
 	termi.Cooked()
-	fmt.Print(termi.ShowCursor())
+	fmt.Print(termi.ShowCursor)
 }
 
 func main() {
@@ -28,15 +34,16 @@ func main() {
 		usage()
 		return
 	}
+	command := os.Args[1]
 
 	start()
 	defer finish()
 
-	switch os.Args[1] {
+	switch command {
 	case "color":
 		colorMain()
-	case "key":
-		keyMain()
+	case "seq":
+		seqMain()
 	case "size":
 		sizeMain()
 	}

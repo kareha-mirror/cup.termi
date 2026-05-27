@@ -6,24 +6,24 @@ import (
 	"unicode/utf8"
 )
 
-type KeyKind int
+type SeqKind int
 
 const (
-	KeyRune KeyKind = iota
+	SeqRune SeqKind = iota
 
-	KeyUp
-	KeyDown
-	KeyRight
-	KeyLeft
+	SeqUp
+	SeqDown
+	SeqRight
+	SeqLeft
 
-	KeyBeginPaste
-	KeyEndPaste
+	SeqBeginPaste
+	SeqEndPaste
 
-	KeyUnknown
+	SeqUnknown
 )
 
-type Key struct {
-	Kind KeyKind
+type Seq struct {
+	Kind SeqKind
 	Rune rune
 	Raw  string
 }
@@ -67,7 +67,7 @@ func runeSize(b byte) int {
 	}
 }
 
-func ReadKey() Key {
+func ReadSeq() Seq {
 	b := readByte()
 	if b != 0x1b { // Escape
 		expected := runeSize(b)
@@ -86,7 +86,7 @@ func ReadKey() Key {
 		if r == utf8.RuneError && size == 1 {
 			panic("Invalid UTF-8 body")
 		}
-		return Key{KeyRune, r, ""}
+		return Seq{SeqRune, r, ""}
 	}
 
 	seq := []byte{b}
@@ -108,20 +108,20 @@ func ReadKey() Key {
 	seq = append(seq, b)
 	if b != '[' {
 		buf = append(buf, seq[1:]...)
-		return Key{KeyRune, rune(seq[0]), ""}
+		return Seq{SeqRune, rune(seq[0]), ""}
 	}
 
 	b = readByte()
 	seq = append(seq, b)
 	switch b {
 	case 'A':
-		return Key{KeyUp, 0, string(seq)}
+		return Seq{SeqUp, 0, string(seq)}
 	case 'B':
-		return Key{KeyDown, 0, string(seq)}
+		return Seq{SeqDown, 0, string(seq)}
 	case 'C':
-		return Key{KeyRight, 0, string(seq)}
+		return Seq{SeqRight, 0, string(seq)}
 	case 'D':
-		return Key{KeyLeft, 0, string(seq)}
+		return Seq{SeqLeft, 0, string(seq)}
 	}
 
 	if b == '2' {
@@ -129,32 +129,32 @@ func ReadKey() Key {
 		seq = append(seq, b)
 		if b != '0' {
 			skip(b)
-			return Key{KeyUnknown, 0, string(seq)}
+			return Seq{SeqUnknown, 0, string(seq)}
 		}
 
 		b = readByte()
 		seq = append(seq, b)
 		if b != '0' && b != '1' {
 			skip(b)
-			return Key{KeyUnknown, 0, string(seq)}
+			return Seq{SeqUnknown, 0, string(seq)}
 		}
 
 		b2 := readByte()
 		seq = append(seq, b2)
 		if b2 != '~' {
 			skip(b2)
-			return Key{KeyUnknown, 0, string(seq)}
+			return Seq{SeqUnknown, 0, string(seq)}
 		}
 
 		if b == '0' {
-			return Key{KeyBeginPaste, 0, string(seq)}
+			return Seq{SeqBeginPaste, 0, string(seq)}
 		} else {
-			return Key{KeyEndPaste, 0, string(seq)}
+			return Seq{SeqEndPaste, 0, string(seq)}
 		}
 	}
 
 	skip(b)
-	return Key{KeyUnknown, 0, string(seq)}
+	return Seq{SeqUnknown, 0, string(seq)}
 }
 
 type EscapeListener *func(bool)

@@ -20,12 +20,12 @@ func isEmoji(r rune) bool {
 	return r >= 0x1f300 && r <= 0x1faff
 }
 
-const tabWidth = 4
+var TabWidth = 4
 
 func runeWidth(r rune, x int) int {
 	// tab
 	if r == '\t' {
-		return tabWidth - (x % tabWidth)
+		return TabWidth - (x % TabWidth)
 	}
 
 	// control code
@@ -68,12 +68,12 @@ func StringWidth(s string, col int) int {
 	return sum
 }
 
-func Draw(s string) string {
+func Render(s string) string {
 	buf := []rune{}
 	x := 0
 	for _, r := range s {
 		if r == '\t' {
-			spaces := tabWidth - (x % tabWidth)
+			spaces := TabWidth - (x % TabWidth)
 			for i := 0; i < spaces; i++ {
 				buf = append(buf, ' ')
 			}
