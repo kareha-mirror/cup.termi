@@ -3,8 +3,11 @@ package termi
 import (
 	"io"
 	"os"
+	"time"
 	"unicode/utf8"
 )
+
+var EscapeTimeout = 100 * time.Millisecond
 
 type SeqKind int
 
@@ -33,16 +36,11 @@ const RuneEnter rune = '\r'
 const RuneBackspace rune = '\b'
 const RuneDelete rune = 0x7f
 
+var ch = make(chan byte, 32)
+var done = make(chan struct{})
 var buf []byte = make([]byte, 0)
 
-func readByte() byte {
-	if len(buf) > 0 {
-		b := buf[0]
-		buf = buf[1:]
-		fireEscape(b)
-		return b
-	}
-
+func readElem() byte {
 	b := make([]byte, 1)
 	_, err := io.ReadFull(os.Stdin, b)
 	if err != nil {
@@ -50,6 +48,54 @@ func readByte() byte {
 	}
 	fireEscape(b[0])
 	return b[0]
+}
+
+func readByte() byte {
+	if len(buf) > 0 {
+		b := buf[0]
+		buf = buf[1:]
+		return b
+	}
+	select {
+	case b := <-ch:
+		return b
+	case <-done:
+		return 0
+	}
+}
+
+func readByteTimeout(d time.Duration) (byte, bool) {
+	if len(buf) > 0 {
+		b := buf[0]
+		buf = buf[1:]
+		return b, true
+	}
+
+	select {
+	case b := <-ch:
+		return b, true
+	case <-done:
+		return 0, false
+	case <-time.After(EscapeTimeout):
+		return 0, false
+	}
+}
+
+func Init() {
+	go func() {
+		for {
+			select {
+			case ch <- readElem():
+			case <-done:
+				return
+			}
+		}
+	}()
+}
+
+func Finish() {
+	close(done)
+	close(ch)
 }
 
 func runeSize(b byte) int {
@@ -104,7 +150,11 @@ func ReadSeq() Seq {
 		}
 	}
 
-	b = readByte()
+	b, ok := readByteTimeout(EscapeTimeout)
+	if !ok {
+		return Seq{SeqRune, rune(seq[0]), string(seq)}
+	}
+
 	seq = append(seq, b)
 	if b != '[' {
 		buf = append(buf, seq[1:]...)

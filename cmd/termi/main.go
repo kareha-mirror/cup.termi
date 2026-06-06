@@ -20,9 +20,13 @@ func start() {
 	fmt.Print(termi.Clear)
 	fmt.Print(termi.HideCursor)
 	fmt.Print(termi.HomeCursor)
+
+	termi.Init()
 }
 
 func finish() {
+	termi.Finish()
+
 	fmt.Print(termi.Clear)
 	fmt.Print(termi.HomeCursor)
 	termi.Cooked()
