@@ -123,9 +123,8 @@ func ReadSeq() Seq {
 		full := make([]byte, expected)
 		full[0] = b
 		if expected > 1 {
-			_, err := io.ReadFull(os.Stdin, full[1:])
-			if err != nil {
-				panic(err)
+			for i := 1; i < len(full); i++ {
+				full[i] = readByte()
 			}
 		}
 		r, size := utf8.DecodeRune(full)
