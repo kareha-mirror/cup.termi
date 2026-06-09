@@ -76,7 +76,7 @@ func readByteTimeout(d time.Duration) (byte, bool) {
 		return b, true
 	case <-done:
 		return 0, false
-	case <-time.After(EscapeTimeout):
+	case <-time.After(d):
 		return 0, false
 	}
 }
@@ -149,9 +149,14 @@ func ReadSeq() Seq {
 		}
 	}
 
-	b, ok := readByteTimeout(EscapeTimeout)
-	if !ok {
-		return Seq{SeqRune, rune(seq[0]), string(seq)}
+	if EscapeTimeout <= 0 {
+		b = readByte()
+	} else {
+		var ok bool
+		b, ok = readByteTimeout(EscapeTimeout)
+		if !ok {
+			return Seq{SeqRune, rune(seq[0]), string(seq)}
+		}
 	}
 
 	seq = append(seq, b)
