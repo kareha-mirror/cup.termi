@@ -20,6 +20,10 @@ func isEmoji(r rune) bool {
 	return r >= 0x1f300 && r <= 0x1faff
 }
 
+func IsWide(r rune) bool {
+	return isWide(r) || isEmoji(r)
+}
+
 var TabWidth = 4
 
 func runeWidth(r rune, x int) int {
