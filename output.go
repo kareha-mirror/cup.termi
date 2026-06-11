@@ -4,7 +4,7 @@ import (
 	"unicode"
 )
 
-func isWide(r rune) bool {
+func IsWide(r rune) bool {
 	return r >= 0x1100 && (r <= 0x115f || // Hangul Jamo
 		r == 0x2329 || r == 0x232a ||
 		(r >= 0x2e80 && r <= 0xa4cf) ||
@@ -16,12 +16,8 @@ func isWide(r rune) bool {
 		(r >= 0xffe0 && r <= 0xffe6))
 }
 
-func isEmoji(r rune) bool {
+func IsEmoji(r rune) bool {
 	return r >= 0x1f300 && r <= 0x1faff
-}
-
-func IsWide(r rune) bool {
-	return isWide(r) || isEmoji(r)
 }
 
 var TabWidth = 4
@@ -46,12 +42,12 @@ func runeWidth(r rune, x int) int {
 	}
 
 	// wide (loose CJK)
-	if isWide(r) {
+	if IsWide(r) {
 		return 2
 	}
 
 	// emoji
-	if isEmoji(r) {
+	if IsEmoji(r) {
 		return 2
 	}
 
@@ -90,7 +86,7 @@ func Render(s string) string {
 	return string(buf)
 }
 
-func wrap(s string, w int, input bool) []string {
+func Wrap(s string, w int, tail bool) []string {
 	if s == "" {
 		return []string{""}
 	}
@@ -114,16 +110,8 @@ func wrap(s string, w int, input bool) []string {
 	}
 	if len(runes) > 0 {
 		lines = append(lines, string(runes))
-	} else if input && sum < 1 {
+	} else if tail && sum < 1 {
 		lines = append(lines, "")
 	}
 	return lines
-}
-
-func Wrap(s string, w int) []string {
-	return wrap(s, w, false)
-}
-
-func WrapInput(s string, w int) []string {
-	return wrap(s, w, true)
 }
