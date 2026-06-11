@@ -90,8 +90,7 @@ func Render(s string) string {
 	return string(buf)
 }
 
-/*
-func Wrap(s string, w int) []string {
+func wrap(s string, w int, input bool) []string {
 	if s == "" {
 		return []string{""}
 	}
@@ -104,28 +103,9 @@ func Wrap(s string, w int) []string {
 		if sum > w {
 			lines = append(lines, string(runes))
 			runes = runes[:0]
-			sum = 0
+			sum = rw
 		}
 		runes = append(runes, r)
-	}
-	if len(runes) > 0 {
-		lines = append(lines, string(runes))
-	}
-	return lines
-}
-*/
-
-func Wrap(s string, w int) []string {
-	if s == "" {
-		return []string{""}
-	}
-	lines := []string{}
-	runes := []rune{}
-	sum := 0
-	for _, r := range s {
-		runes = append(runes, r)
-		rw := runeWidth(r, sum)
-		sum += rw
 		if sum >= w {
 			lines = append(lines, string(runes))
 			runes = runes[:0]
@@ -134,31 +114,16 @@ func Wrap(s string, w int) []string {
 	}
 	if len(runes) > 0 {
 		lines = append(lines, string(runes))
-	}
-	return lines
-}
-
-func WrapInput(s string, w int) []string {
-	if s == "" {
-		return []string{""}
-	}
-	lines := []string{}
-	runes := []rune{}
-	sum := 0
-	for _, r := range s {
-		runes = append(runes, r)
-		rw := runeWidth(r, sum)
-		sum += rw
-		if sum >= w {
-			lines = append(lines, string(runes))
-			runes = runes[:0]
-			sum = 0
-		}
-	}
-	if len(runes) > 0 {
-		lines = append(lines, string(runes))
-	} else if sum < 1 {
+	} else if input && sum < 1 {
 		lines = append(lines, "")
 	}
 	return lines
+}
+
+func Wrap(s string, w int) []string {
+	return wrap(s, w, false)
+}
+
+func WrapInput(s string, w int) []string {
+	return wrap(s, w, true)
 }
