@@ -85,3 +85,26 @@ func Render(s string) string {
 	}
 	return string(buf)
 }
+
+func Wrap(s string, w int) []string {
+	if s == "" {
+		return []string{""}
+	}
+	lines := []string{}
+	runes := []rune{}
+	sum := 0
+	for _, r := range s {
+		rw := runeWidth(r, sum)
+		sum += rw
+		if sum > w {
+			lines = append(lines, string(runes))
+			runes = runes[:0]
+			sum = 0
+		}
+		runes = append(runes, r)
+	}
+	if len(runes) > 0 {
+		lines = append(lines, string(runes))
+	}
+	return lines
+}
