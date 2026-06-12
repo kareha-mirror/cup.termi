@@ -102,7 +102,7 @@ func Wrap(s string, w int, tail bool) []string {
 			sum = rw
 		}
 		runes = append(runes, r)
-		if sum >= w {
+		if sum >= w || (r == '\t' && sum+TabWidth > w) {
 			lines = append(lines, string(runes))
 			runes = runes[:0]
 			sum = 0
