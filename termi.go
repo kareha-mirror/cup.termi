@@ -29,6 +29,9 @@ func Cooked() {
 	state = nil
 }
 
+const SetAlternate = "\x1b[?1049h"
+const ResetAlternate = "\x1b[?1049l"
+
 const Clear = "\x1b[2J"
 
 const HomeCursor = "\x1b[H"
