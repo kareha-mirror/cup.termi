@@ -52,6 +52,11 @@ func read() (byte, error) {
 	if err != nil {
 		return 0, fmt.Errorf("failed to poll")
 	}
+	if fds[1].Revents&unix.POLLIN != 0 {
+		var b [16]byte
+		unix.Read(int(fds[1].Fd), b[:])
+		return 0, fmt.Errorf("killed")
+	}
 	if fds[0].Revents&unix.POLLIN != 0 {
 		for {
 			n, err := os.Stdin.Read(inputBuf[:])
@@ -63,11 +68,6 @@ func read() (byte, error) {
 				return inputBuf[0], nil
 			}
 		}
-	}
-	if fds[1].Revents&unix.POLLIN != 0 {
-		var b [16]byte
-		unix.Read(int(fds[1].Fd), b[:])
-		return 0, fmt.Errorf("killed")
 	}
 	return 0, fmt.Errorf("invalid state")
 }
