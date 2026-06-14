@@ -1,7 +1,6 @@
 package termi
 
 import (
-	"context"
 	"sync"
 	"time"
 	"unicode/utf8"
@@ -37,8 +36,6 @@ const RuneBackspace rune = '\b'
 const RuneDelete rune = 0x7f
 
 var wg sync.WaitGroup
-var ctx context.Context
-var cancel context.CancelFunc
 var ch chan byte
 var done chan struct{}
 var buf []byte
@@ -75,19 +72,18 @@ func readByteTimeout(d time.Duration) (byte, bool) {
 }
 
 func StartInput() {
-	in = newInput()
-	ctx, cancel = context.WithCancel(context.Background())
 	ch = make(chan byte, 32)
 	done = make(chan struct{})
 	buf = make([]byte, 0)
 
+	startRead()
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
-			b, err := read(ctx)
+			b, err := read()
 			if err != nil {
-				return
+				break
 			}
 			ch <- b
 		}
@@ -97,10 +93,9 @@ func StartInput() {
 }
 
 func StopInput() {
-	in.Close()
-	cancel()
+	stopRead()
 	wg.Wait()
-	setBlocking()
+	finishRead()
 }
 
 func runeSize(b byte) int {

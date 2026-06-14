@@ -3,22 +3,25 @@
 package termi
 
 import (
-	"context"
 	"os"
 )
 
-func newInput() *os.File {
-	return os.Stdin
+func startRead() {
+	in = os.Stdin
 }
 
-func setBlocking() {
+func stopRead() {
+	// do nothing
+}
+
+func finishRead() {
 	// do nothing
 }
 
 var in *os.File
 var inputBuf [1]byte
 
-func read(ctx context.Context) (byte, error) {
+func read() (byte, error) {
 	for {
 		n, err := in.Read(inputBuf[:])
 		if err != nil {

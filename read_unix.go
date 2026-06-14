@@ -3,50 +3,58 @@
 package termi
 
 import (
-	"context"
-	"errors"
+	"fmt"
 	"os"
 	"syscall"
-	"time"
 
 	"golang.org/x/sys/unix"
 )
 
-func newInput() *os.File {
-	fd, err := unix.Dup(syscall.Stdin)
-	if err != nil {
-		panic(err)
-	}
-	err = unix.SetNonblock(fd, true)
-	if err != nil {
-		panic(err)
-	}
-	return os.NewFile(uintptr(fd), "(input)")
-}
-
-func setBlocking() {
-	err := unix.SetNonblock(syscall.Stdin, false)
-	if err != nil {
-		panic(err)
-	}
-}
-
-var in *os.File
+var wakerR int
+var wakerW int
+var fds []unix.PollFd
 var inputBuf [1]byte
 
-func read(ctx context.Context) (byte, error) {
+func startRead() {
+	var pipe [2]int
+	err := unix.Pipe(pipe[:])
+	if err != nil {
+		panic(err)
+	}
+	wakerR = pipe[0]
+	wakerW = pipe[1]
+
+	fds = []unix.PollFd{
+		{Fd: int32(syscall.Stdin), Events: unix.POLLIN},
+		{Fd: int32(wakerR), Events: unix.POLLIN},
+	}
+}
+
+func stopRead() {
 	for {
-		select {
-		case <-ctx.Done():
-			in.Close()
-			return 0, ctx.Err()
-		default:
-			n, err := in.Read(inputBuf[:])
-			if errors.Is(err, unix.EAGAIN) ||
-				errors.Is(err, unix.EWOULDBLOCK) {
-				time.Sleep(10 * time.Millisecond)
-				continue
-			}
+		n, err := unix.Write(wakerW, []byte{1})
+		if err != nil {
+			panic(err)
+		}
+		if n == 1 {
+			return
+		}
+	}
+}
+
+func finishRead() {
+	unix.Close(wakerR)
+	unix.Close(wakerW)
+}
+
+func read() (byte, error) {
+	_, err := unix.Poll(fds, -1)
+	if err != nil {
+		return 0, fmt.Errorf("failed to poll")
+	}
+	if fds[0].Revents&unix.POLLIN != 0 {
+		for {
+			n, err := os.Stdin.Read(inputBuf[:])
 			if err != nil {
 				return 0, err
 			}
@@ -56,4 +64,10 @@ func read(ctx context.Context) (byte, error) {
 			}
 		}
 	}
+	if fds[1].Revents&unix.POLLIN != 0 {
+		var b [16]byte
+		unix.Read(int(fds[1].Fd), b[:])
+		return 0, fmt.Errorf("killed")
+	}
+	return 0, fmt.Errorf("invalid state")
 }
