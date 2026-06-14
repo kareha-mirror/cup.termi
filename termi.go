@@ -11,8 +11,7 @@ var state *term.State
 
 func Raw() {
 	if state != nil {
-		term.Restore(int(os.Stdin.Fd()), state)
-		state = nil
+		panic("invalid state")
 	}
 	s, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
@@ -25,7 +24,10 @@ func Cooked() {
 	if state == nil {
 		panic("invalid state")
 	}
-	term.Restore(int(os.Stdin.Fd()), state)
+	err := term.Restore(int(os.Stdin.Fd()), state)
+	if err != nil {
+		panic(err)
+	}
 	state = nil
 }
 
