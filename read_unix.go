@@ -48,26 +48,31 @@ func finishRead() {
 }
 
 func read() (byte, error) {
-	_, err := unix.Poll(fds, -1)
-	if err != nil {
-		return 0, fmt.Errorf("failed to poll")
-	}
-	if fds[1].Revents&unix.POLLIN != 0 {
-		var b [16]byte
-		unix.Read(int(fds[1].Fd), b[:])
-		return 0, fmt.Errorf("killed")
-	}
-	if fds[0].Revents&unix.POLLIN != 0 {
-		for {
-			n, err := os.Stdin.Read(inputBuf[:])
-			if err != nil {
-				return 0, err
-			}
-			if n == 1 {
-				fireEscape(inputBuf[0])
-				return inputBuf[0], nil
+	for {
+		_, err := unix.Poll(fds, -1)
+		if err == unix.EINTR {
+			continue
+		}
+		if err != nil {
+			return 0, fmt.Errorf("failed to poll")
+		}
+		if fds[1].Revents&unix.POLLIN != 0 {
+			var b [16]byte
+			unix.Read(int(fds[1].Fd), b[:])
+			return 0, fmt.Errorf("killed")
+		}
+		if fds[0].Revents&unix.POLLIN != 0 {
+			for {
+				n, err := os.Stdin.Read(inputBuf[:])
+				if err != nil {
+					return 0, err
+				}
+				if n == 1 {
+					fireEscape(inputBuf[0])
+					return inputBuf[0], nil
+				}
 			}
 		}
+		return 0, fmt.Errorf("invalid state")
 	}
-	return 0, fmt.Errorf("invalid state")
 }

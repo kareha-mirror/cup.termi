@@ -41,6 +41,9 @@ func drawSeq(seq termi.Seq) {
 func seqMain() {
 	for {
 		seq := termi.ReadSeq()
+		if seq.Kind == termi.SeqQuit {
+			return
+		}
 
 		drawSeq(seq)
 

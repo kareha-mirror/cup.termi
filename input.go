@@ -22,6 +22,7 @@ const (
 	SeqEndPaste
 
 	SeqUnknown
+	SeqQuit
 )
 
 type Seq struct {
@@ -40,17 +41,17 @@ var ch chan byte
 var done chan struct{}
 var buf []byte
 
-func readByte() byte {
+func readByte() (byte, bool) {
 	if len(buf) > 0 {
 		b := buf[0]
 		buf = buf[1:]
-		return b
+		return b, true
 	}
 	select {
 	case b := <-ch:
-		return b
+		return b, true
 	case <-done:
-		return 0
+		return 0, false
 	}
 }
 
@@ -114,7 +115,10 @@ func runeSize(b byte) int {
 }
 
 func ReadSeq() Seq {
-	b := readByte()
+	b, ok := readByte()
+	if !ok {
+		return Seq{SeqQuit, 0, ""}
+	}
 	if b != 0x1b { // Escape
 		expected := runeSize(b)
 		if expected == -1 {
@@ -124,7 +128,11 @@ func ReadSeq() Seq {
 		full[0] = b
 		if expected > 1 {
 			for i := 1; i < len(full); i++ {
-				full[i] = readByte()
+				b, ok = readByte()
+				if !ok {
+					return Seq{SeqQuit, 0, ""}
+				}
+				full[i] = b
 			}
 		}
 		r, size := utf8.DecodeRune(full)
@@ -141,7 +149,10 @@ func ReadSeq() Seq {
 			return
 		}
 		for {
-			b = readByte()
+			b, ok = readByte()
+			if !ok {
+				return
+			}
 			seq = append(seq, b)
 			if b >= 0x40 && b <= 0x7e {
 				return
@@ -150,7 +161,10 @@ func ReadSeq() Seq {
 	}
 
 	if EscapeTimeout <= 0 {
-		b = readByte()
+		b, ok = readByte()
+		if !ok {
+			return Seq{SeqQuit, 0, ""}
+		}
 	} else {
 		var ok bool
 		b, ok = readByteTimeout(EscapeTimeout)
@@ -165,7 +179,10 @@ func ReadSeq() Seq {
 		return Seq{SeqRune, rune(seq[0]), ""}
 	}
 
-	b = readByte()
+	b, ok = readByte()
+	if !ok {
+		return Seq{SeqQuit, 0, ""}
+	}
 	seq = append(seq, b)
 	switch b {
 	case 'A':
@@ -179,21 +196,30 @@ func ReadSeq() Seq {
 	}
 
 	if b == '2' {
-		b = readByte()
+		b, ok = readByte()
+		if !ok {
+			return Seq{SeqQuit, 0, ""}
+		}
 		seq = append(seq, b)
 		if b != '0' {
 			skip(b)
 			return Seq{SeqUnknown, 0, string(seq)}
 		}
 
-		b = readByte()
+		b, ok = readByte()
+		if !ok {
+			return Seq{SeqQuit, 0, ""}
+		}
 		seq = append(seq, b)
 		if b != '0' && b != '1' {
 			skip(b)
 			return Seq{SeqUnknown, 0, string(seq)}
 		}
 
-		b2 := readByte()
+		b2, ok := readByte()
+		if !ok {
+			return Seq{SeqQuit, 0, ""}
+		}
 		seq = append(seq, b2)
 		if b2 != '~' {
 			skip(b2)
