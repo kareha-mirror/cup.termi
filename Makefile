@@ -2,7 +2,7 @@ all: build
 
 build:
 	go build -o termi ./cmd/termi
-	go build *.go
+	go build
 
 clean:
 	rm -f termi
@@ -15,3 +15,6 @@ fmt:
 
 test:
 	go test ./...
+
+windows:
+	GOOS=windows go build

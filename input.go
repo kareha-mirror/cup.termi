@@ -1,8 +1,8 @@
 package termi
 
 import (
-	"io"
-	"os"
+	"context"
+	"sync"
 	"time"
 	"unicode/utf8"
 )
@@ -36,19 +36,12 @@ const RuneEnter rune = '\r'
 const RuneBackspace rune = '\b'
 const RuneDelete rune = 0x7f
 
-var ch = make(chan byte, 32)
-var done = make(chan struct{})
-var buf []byte = make([]byte, 0)
-
-func readElem() byte {
-	b := make([]byte, 1)
-	_, err := io.ReadFull(os.Stdin, b)
-	if err != nil {
-		panic(err)
-	}
-	fireEscape(b[0])
-	return b[0]
-}
+var wg sync.WaitGroup
+var ctx context.Context
+var cancel context.CancelFunc
+var ch chan byte
+var done chan struct{}
+var buf []byte
 
 func readByte() byte {
 	if len(buf) > 0 {
@@ -81,21 +74,33 @@ func readByteTimeout(d time.Duration) (byte, bool) {
 	}
 }
 
-func Init() {
+func StartInput() {
+	in = newInput()
+	ctx, cancel = context.WithCancel(context.Background())
+	ch = make(chan byte, 32)
+	done = make(chan struct{})
+	buf = make([]byte, 0)
+
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for {
-			select {
-			case ch <- readElem():
-			case <-done:
+			b, err := read(ctx)
+			if err != nil {
 				return
 			}
+			ch <- b
 		}
+		close(done)
+		close(ch)
 	}()
 }
 
-func Finish() {
-	close(done)
-	close(ch)
+func StopInput() {
+	in.Close()
+	cancel()
+	wg.Wait()
+	setBlocking()
 }
 
 func runeSize(b byte) int {

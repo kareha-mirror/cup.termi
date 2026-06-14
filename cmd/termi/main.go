@@ -21,11 +21,11 @@ func start() {
 	fmt.Print(termi.HideCursor)
 	fmt.Print(termi.HomeCursor)
 
-	termi.Init()
+	termi.StartInput()
 }
 
 func finish() {
-	termi.Finish()
+	termi.StopInput()
 
 	fmt.Print(termi.Clear)
 	fmt.Print(termi.HomeCursor)
