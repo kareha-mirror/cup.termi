@@ -33,70 +33,80 @@ type Seq struct {
 
 const RuneEscape rune = 0x1b
 const RuneEnter rune = '\r'
+const RuneNewline rune = '\n'
 const RuneBackspace rune = '\b'
 const RuneDelete rune = 0x7f
 
-var wg sync.WaitGroup
-var ch chan byte
-var done chan struct{}
-var buf []byte
+var inputWG sync.WaitGroup
+var inputCh chan byte
+var inputDone chan struct{}
+var inputBuf []byte
 
 func readByte() (byte, bool) {
-	if len(buf) > 0 {
-		b := buf[0]
-		buf = buf[1:]
+	if len(inputBuf) > 0 {
+		b := inputBuf[0]
+		inputBuf = inputBuf[1:]
 		return b, true
 	}
 	select {
-	case b := <-ch:
+	case b := <-inputCh:
 		return b, true
-	case <-done:
+	case <-inputDone:
 		return 0, false
 	}
 }
 
 func readByteTimeout(d time.Duration) (byte, bool) {
-	if len(buf) > 0 {
-		b := buf[0]
-		buf = buf[1:]
+	if len(inputBuf) > 0 {
+		b := inputBuf[0]
+		inputBuf = inputBuf[1:]
 		return b, true
 	}
 
 	select {
-	case b := <-ch:
+	case b := <-inputCh:
 		return b, true
-	case <-done:
+	case <-inputDone:
 		return 0, false
 	case <-time.After(d):
 		return 0, false
 	}
 }
 
-func StartInput() {
-	ch = make(chan byte, 32)
-	done = make(chan struct{})
-	buf = make([]byte, 0)
+func StartInput() error {
+	err := startRead()
+	if err != nil {
+		return err
+	}
 
-	startRead()
-	wg.Add(1)
+	inputCh = make(chan byte, 32)
+	inputDone = make(chan struct{})
+	inputBuf = make([]byte, 0)
+
+	inputWG.Add(1)
 	go func() {
-		defer wg.Done()
+		defer inputWG.Done()
 		for {
 			b, err := read()
 			if err != nil {
 				break
 			}
-			ch <- b
+			inputCh <- b
 		}
-		close(done)
-		close(ch)
+		close(inputDone)
+		close(inputCh)
 	}()
+
+	return nil
 }
 
-func StopInput() {
-	stopRead()
-	wg.Wait()
-	finishRead()
+func StopInput() error {
+	err := stopRead()
+	if err != nil {
+		return err
+	}
+	inputWG.Wait()
+	return finishRead()
 }
 
 func runeSize(b byte) int {
@@ -175,7 +185,7 @@ func ReadSeq() Seq {
 
 	seq = append(seq, b)
 	if b != '[' {
-		buf = append(buf, seq[1:]...)
+		inputBuf = append(inputBuf, seq[1:]...)
 		return Seq{SeqRune, rune(seq[0]), ""}
 	}
 
@@ -237,39 +247,27 @@ func ReadSeq() Seq {
 	return Seq{SeqUnknown, 0, string(seq)}
 }
 
+//
+// Escape Listener
+//
+
 type EscapeListener *func(bool)
 
-var escapeListeners = make([]EscapeListener, 0)
+var escapeListener EscapeListener
 
-func AddEscapeListener(f EscapeListener) {
-	escapeListeners = append(escapeListeners, f)
+func SetEscapeListener(f EscapeListener) {
+	escapeListener = f
 }
 
-func RemoveEscapeListener(f EscapeListener) bool {
-	for i := 0; i < len(escapeListeners); i++ {
-		if escapeListeners[i] == f {
-			if i+1 < len(escapeListeners) {
-				escapeListeners = append(
-					escapeListeners[:i], escapeListeners[i+1:]...,
-				)
-			} else {
-				escapeListeners = escapeListeners[:i]
-			}
-			return true
-		}
-	}
-	return false
-}
+var prevEscape = false
 
-var prevEsc = false
-
-func fireEscape(b byte) {
-	esc := b == 0x1b
-	if esc == prevEsc {
+func checkEscape(b byte) {
+	escape := b == 0x1b
+	if escape == prevEscape {
 		return
 	}
-	for _, f := range escapeListeners {
-		(*f)(esc)
+	if escapeListener != nil {
+		(*escapeListener)(escape)
 	}
-	prevEsc = esc
+	prevEscape = escape
 }

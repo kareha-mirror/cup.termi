@@ -4,73 +4,79 @@ package termi
 
 import (
 	"fmt"
-	"os"
 	"syscall"
 
 	"golang.org/x/sys/unix"
 )
 
-var wakerR int
-var wakerW int
-var fds []unix.PollFd
-var inputBuf [1]byte
+var readWakerR int
+var readWakerW int
+var readFDs []unix.PollFd
+var readBuf [1]byte
 
-func startRead() {
+func startRead() error {
 	var pipe [2]int
 	err := unix.Pipe(pipe[:])
 	if err != nil {
-		panic(err)
+		return err
 	}
-	wakerR = pipe[0]
-	wakerW = pipe[1]
-
-	fds = []unix.PollFd{
+	readWakerR = pipe[0]
+	readWakerW = pipe[1]
+	readFDs = []unix.PollFd{
+		{Fd: int32(readWakerR), Events: unix.POLLIN},
 		{Fd: int32(syscall.Stdin), Events: unix.POLLIN},
-		{Fd: int32(wakerR), Events: unix.POLLIN},
 	}
+	return nil
 }
 
-func stopRead() {
+func stopRead() error {
+	poison := []byte{0}
 	for {
-		n, err := unix.Write(wakerW, []byte{1})
+		n, err := unix.Write(readWakerW, poison)
 		if err != nil {
-			panic(err)
+			return err
 		}
-		if n == 1 {
-			return
+		if n < 1 {
+			continue
 		}
+		return nil
 	}
 }
 
-func finishRead() {
-	unix.Close(wakerR)
-	unix.Close(wakerW)
+func finishRead() error {
+	err := unix.Close(readWakerR)
+	if err != nil {
+		return err
+	}
+	return unix.Close(readWakerW)
 }
 
 func read() (byte, error) {
 	for {
-		_, err := unix.Poll(fds, -1)
+		_, err := unix.Poll(readFDs, -1)
 		if err == unix.EINTR {
 			continue
 		}
 		if err != nil {
 			return 0, fmt.Errorf("failed to poll")
 		}
-		if fds[1].Revents&unix.POLLIN != 0 {
-			var b [16]byte
-			unix.Read(int(fds[1].Fd), b[:])
+		if readFDs[0].Revents&unix.POLLIN != 0 {
+			var sink [1]byte
+			unix.Read(int(readFDs[0].Fd), sink[:])
 			return 0, fmt.Errorf("killed")
 		}
-		if fds[0].Revents&unix.POLLIN != 0 {
+		if readFDs[1].Revents&unix.POLLIN != 0 {
 			for {
-				n, err := os.Stdin.Read(inputBuf[:])
+				n, err := unix.Read(int(readFDs[1].Fd), readBuf[:])
 				if err != nil {
 					return 0, err
 				}
-				if n == 1 {
-					fireEscape(inputBuf[0])
-					return inputBuf[0], nil
+				if n < 1 {
+					continue
 				}
+				b := readBuf[0]
+				checkEscape(b)
+				return b, nil
 			}
 		}
 		return 0, fmt.Errorf("invalid state")
