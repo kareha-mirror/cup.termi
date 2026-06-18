@@ -53,7 +53,7 @@ func keyMain() {
 			drawKey(key)
 		case sig := <-termi.Sigs():
 			if sig == termi.SigStop {
-				termi.StopInput()
+				termi.StopKey()
 				fmt.Print(termi.ResetAlternate)
 				termi.Cooked()
 				fmt.Print(termi.ShowCursor)
@@ -65,7 +65,7 @@ func keyMain() {
 						fmt.Print(termi.HideCursor)
 						termi.Raw()
 						fmt.Print(termi.SetAlternate)
-						termi.StartInput()
+						termi.StartKey()
 						break
 					}
 				}

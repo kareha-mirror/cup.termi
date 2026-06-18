@@ -22,13 +22,13 @@ func start() {
 	fmt.Print(termi.HideCursor)
 	fmt.Print(termi.HomeCursor)
 
-	termi.StartInput()
+	termi.StartKey()
 	termi.StartSig()
 }
 
 func finish() {
 	termi.StopSig()
-	termi.StopInput()
+	termi.StopKey()
 
 	fmt.Print(termi.Clear)
 	fmt.Print(termi.HomeCursor)
