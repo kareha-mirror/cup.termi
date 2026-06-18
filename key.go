@@ -8,25 +8,25 @@ import (
 
 var EscapeTimeout = 100 * time.Millisecond
 
-type SeqKind int
+type KeyKind int
 
 const (
-	SeqRune SeqKind = iota
+	KeyRune KeyKind = iota
 
-	SeqUp
-	SeqDown
-	SeqRight
-	SeqLeft
+	KeyUp
+	KeyDown
+	KeyRight
+	KeyLeft
 
-	SeqBeginPaste
-	SeqEndPaste
+	KeyBeginPaste
+	KeyEndPaste
 
-	SeqUnknown
-	SeqQuit
+	KeyUnknown
+	KeyQuit
 )
 
-type Seq struct {
-	Kind SeqKind
+type Key struct {
+	Kind KeyKind
 	Rune rune
 	Raw  string
 }
@@ -37,36 +37,37 @@ const RuneNewline rune = '\n'
 const RuneBackspace rune = '\b'
 const RuneDelete rune = 0x7f
 
-var inputWG sync.WaitGroup
-var inputCh chan byte
-var inputDone chan struct{}
-var inputBuf []byte
+var keyWG sync.WaitGroup
+var readCh chan byte
+var readDone chan struct{}
+var keyBuf []byte
+var keyCh chan Key
 
 func readByte() (byte, bool) {
-	if len(inputBuf) > 0 {
-		b := inputBuf[0]
-		inputBuf = inputBuf[1:]
+	if len(keyBuf) > 0 {
+		b := keyBuf[0]
+		keyBuf = keyBuf[1:]
 		return b, true
 	}
 	select {
-	case b := <-inputCh:
+	case b := <-readCh:
 		return b, true
-	case <-inputDone:
+	case <-readDone:
 		return 0, false
 	}
 }
 
 func readByteTimeout(d time.Duration) (byte, bool) {
-	if len(inputBuf) > 0 {
-		b := inputBuf[0]
-		inputBuf = inputBuf[1:]
+	if len(keyBuf) > 0 {
+		b := keyBuf[0]
+		keyBuf = keyBuf[1:]
 		return b, true
 	}
 
 	select {
-	case b := <-inputCh:
+	case b := <-readCh:
 		return b, true
-	case <-inputDone:
+	case <-readDone:
 		return 0, false
 	case <-time.After(d):
 		return 0, false
@@ -79,22 +80,35 @@ func StartInput() error {
 		return err
 	}
 
-	inputCh = make(chan byte, 32)
-	inputDone = make(chan struct{})
-	inputBuf = make([]byte, 0)
+	readCh = make(chan byte, 32)
+	readDone = make(chan struct{})
+	keyBuf = make([]byte, 0)
+	keyCh = make(chan Key, 32)
 
-	inputWG.Add(1)
+	keyWG.Add(1)
 	go func() {
-		defer inputWG.Done()
+		defer keyWG.Done()
 		for {
 			b, err := read()
 			if err != nil {
 				break
 			}
-			inputCh <- b
+			readCh <- b
 		}
-		close(inputDone)
-		close(inputCh)
+		close(readDone)
+		close(readCh)
+	}()
+	keyWG.Add(1)
+	go func() {
+		defer keyWG.Done()
+		for {
+			key := readKey()
+			if key.Kind == KeyQuit {
+				break
+			}
+			keyCh <- key
+		}
+		close(keyCh)
 	}()
 
 	return nil
@@ -105,8 +119,12 @@ func StopInput() error {
 	if err != nil {
 		return err
 	}
-	inputWG.Wait()
+	keyWG.Wait()
 	return finishRead()
+}
+
+func Keys() chan Key {
+	return keyCh
 }
 
 func runeSize(b byte) int {
@@ -124,10 +142,10 @@ func runeSize(b byte) int {
 	}
 }
 
-func ReadSeq() Seq {
+func readKey() Key {
 	b, ok := readByte()
 	if !ok {
-		return Seq{SeqQuit, 0, ""}
+		return Key{KeyQuit, 0, ""}
 	}
 	if b != 0x1b { // Escape
 		expected := runeSize(b)
@@ -140,7 +158,7 @@ func ReadSeq() Seq {
 			for i := 1; i < len(full); i++ {
 				b, ok = readByte()
 				if !ok {
-					return Seq{SeqQuit, 0, ""}
+					return Key{KeyQuit, 0, ""}
 				}
 				full[i] = b
 			}
@@ -149,10 +167,10 @@ func ReadSeq() Seq {
 		if r == utf8.RuneError && size == 1 {
 			panic("Invalid UTF-8 body")
 		}
-		return Seq{SeqRune, r, ""}
+		return Key{KeyRune, r, ""}
 	}
 
-	seq := []byte{b}
+	key := []byte{b}
 
 	skip := func(b byte) {
 		if b >= 0x40 && b <= 0x7e {
@@ -163,7 +181,7 @@ func ReadSeq() Seq {
 			if !ok {
 				return
 			}
-			seq = append(seq, b)
+			key = append(key, b)
 			if b >= 0x40 && b <= 0x7e {
 				return
 			}
@@ -173,78 +191,78 @@ func ReadSeq() Seq {
 	if EscapeTimeout <= 0 {
 		b, ok = readByte()
 		if !ok {
-			return Seq{SeqQuit, 0, ""}
+			return Key{KeyQuit, 0, ""}
 		}
 	} else {
 		var ok bool
 		b, ok = readByteTimeout(EscapeTimeout)
 		if !ok {
-			return Seq{SeqRune, rune(seq[0]), string(seq)}
+			return Key{KeyRune, rune(key[0]), string(key)}
 		}
 	}
 
-	seq = append(seq, b)
+	key = append(key, b)
 	if b != '[' {
-		inputBuf = append(inputBuf, seq[1:]...)
-		return Seq{SeqRune, rune(seq[0]), ""}
+		keyBuf = append(keyBuf, key[1:]...)
+		return Key{KeyRune, rune(key[0]), ""}
 	}
 
 	b, ok = readByte()
 	if !ok {
-		return Seq{SeqQuit, 0, ""}
+		return Key{KeyQuit, 0, ""}
 	}
-	seq = append(seq, b)
+	key = append(key, b)
 	switch b {
 	case 'A':
-		return Seq{SeqUp, 0, string(seq)}
+		return Key{KeyUp, 0, string(key)}
 	case 'B':
-		return Seq{SeqDown, 0, string(seq)}
+		return Key{KeyDown, 0, string(key)}
 	case 'C':
-		return Seq{SeqRight, 0, string(seq)}
+		return Key{KeyRight, 0, string(key)}
 	case 'D':
-		return Seq{SeqLeft, 0, string(seq)}
+		return Key{KeyLeft, 0, string(key)}
 	}
 
 	if b == '2' {
 		b, ok = readByte()
 		if !ok {
-			return Seq{SeqQuit, 0, ""}
+			return Key{KeyQuit, 0, ""}
 		}
-		seq = append(seq, b)
+		key = append(key, b)
 		if b != '0' {
 			skip(b)
-			return Seq{SeqUnknown, 0, string(seq)}
+			return Key{KeyUnknown, 0, string(key)}
 		}
 
 		b, ok = readByte()
 		if !ok {
-			return Seq{SeqQuit, 0, ""}
+			return Key{KeyQuit, 0, ""}
 		}
-		seq = append(seq, b)
+		key = append(key, b)
 		if b != '0' && b != '1' {
 			skip(b)
-			return Seq{SeqUnknown, 0, string(seq)}
+			return Key{KeyUnknown, 0, string(key)}
 		}
 
 		b2, ok := readByte()
 		if !ok {
-			return Seq{SeqQuit, 0, ""}
+			return Key{KeyQuit, 0, ""}
 		}
-		seq = append(seq, b2)
+		key = append(key, b2)
 		if b2 != '~' {
 			skip(b2)
-			return Seq{SeqUnknown, 0, string(seq)}
+			return Key{KeyUnknown, 0, string(key)}
 		}
 
 		if b == '0' {
-			return Seq{SeqBeginPaste, 0, string(seq)}
+			return Key{KeyBeginPaste, 0, string(key)}
 		} else {
-			return Seq{SeqEndPaste, 0, string(seq)}
+			return Key{KeyEndPaste, 0, string(key)}
 		}
 	}
 
 	skip(b)
-	return Seq{SeqUnknown, 0, string(seq)}
+	return Key{KeyUnknown, 0, string(key)}
 }
 
 //

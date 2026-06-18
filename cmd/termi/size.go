@@ -22,5 +22,5 @@ func drawSize() {
 func sizeMain() {
 	drawSize()
 
-	termi.ReadSeq()
+	<-termi.Keys()
 }

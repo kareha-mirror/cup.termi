@@ -23,5 +23,5 @@ func drawColor() {
 func colorMain() {
 	drawColor()
 
-	termi.ReadSeq()
+	<-termi.Keys()
 }
