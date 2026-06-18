@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"syscall"
 
 	"tea.kareha.org/cup/termi"
 )
@@ -48,7 +47,7 @@ func keyMain() {
 				case 'q':
 					return
 				case '\x1a': // Ctrl-Z
-					syscall.Kill(syscall.Getpid(), syscall.SIGTSTP)
+					termi.Suspend()
 				}
 			}
 			drawKey(key)
@@ -59,7 +58,7 @@ func keyMain() {
 				termi.Cooked()
 				fmt.Print(termi.ShowCursor)
 
-				syscall.Kill(syscall.Getpid(), syscall.SIGSTOP)
+				termi.ForceSuspend()
 				for {
 					sig := <-termi.Sigs()
 					if sig == termi.SigCont {

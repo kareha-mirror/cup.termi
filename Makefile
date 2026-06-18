@@ -17,4 +17,5 @@ test:
 	go test ./...
 
 windows:
+	GOOS=windows go build -o termi-windows ./cmd/termi
 	GOOS=windows go build
