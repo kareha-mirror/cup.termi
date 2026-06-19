@@ -13,11 +13,12 @@ func NewColorPair(fg, bg Color) ColorPair {
 	return ColorPair{fg, bg}
 }
 
-func (cp ColorPair) Pair() (Color, Color) {
+func (cp ColorPair) Elements() (Color, Color) {
 	return cp.fg, cp.bg
 }
 
-func splitColorPairString(s string) (string, string) {
+func ParseColorPair(s string) (ColorPair, error) {
+	// split
 	parts := strings.Split(s, ",")
 	if len(parts[0]) < 1 {
 		parts[0] = "default"
@@ -25,51 +26,44 @@ func splitColorPairString(s string) (string, string) {
 	if len(parts) < 2 {
 		parts = append(parts, "default")
 	}
-	return parts[0], parts[1]
-}
 
-func ParseColorPair(s string) (ColorPair, error) {
-	fgStr, bgStr := splitColorPairString(s)
-	fg, err := ParseColor(fgStr)
+	// parse
+	fg, err := ParseColor(parts[0])
 	if err != nil {
 		return ColorPair{}, err
 	}
-	bg, err := ParseColor(bgStr)
+	bg, err := ParseColor(parts[1])
 	if err != nil {
 		return ColorPair{}, err
 	}
+
 	return ColorPair{fg, bg}, nil
 }
 
 func (cp ColorPair) Seq() string {
-	var fg, bg string
-	if cp.fg.def {
-		fg = "39"
-	} else {
+	fg := "39"
+	if !cp.fg.def {
 		switch colorMode {
 		case ColorMode16:
-			fg = cp.fg.cast().fg16()
+			fg = cp.fg.cast16().fg16()
 		case ColorMode256:
-			fg = cp.fg.cast().fg256()
+			fg = cp.fg.cast256().fg256()
 		case ColorModeTrue:
-			fg = cp.fg.cast().fgTrue()
-		default: // unknown color mode
-			fg = "39"
+			fg = cp.fg.fgTrue()
 		}
 	}
-	if cp.bg.def {
-		bg = "49"
-	} else {
+
+	bg := "49"
+	if !cp.bg.def {
 		switch colorMode {
 		case ColorMode16:
-			bg = cp.bg.cast().bg16()
+			bg = cp.bg.cast16().bg16()
 		case ColorMode256:
-			bg = cp.bg.cast().bg256()
+			bg = cp.bg.cast256().bg256()
 		case ColorModeTrue:
-			bg = cp.bg.cast().bgTrue()
-		default: // unknown color mode
-			bg = "49"
+			bg = cp.bg.bgTrue()
 		}
 	}
+
 	return fmt.Sprintf("\x1b[%s;%sm", fg, bg)
 }

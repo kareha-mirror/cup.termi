@@ -307,21 +307,18 @@ func (c Color) index256() uint8 {
 	return uint8(16 + 36*r + 6*g + b)
 }
 
-func (c Color) cast() Color {
-	switch colorMode {
-	case ColorMode16:
-		if c.indexed && c.index < 16 {
-			return c
-		}
-		return palette[c.index16()]
-	case ColorMode256:
-		if c.indexed {
-			return c
-		}
-		return palette[c.index256()]
-	default: // ColorModeTrue
+func (c Color) cast16() Color {
+	if c.indexed && c.index < 16 {
 		return c
 	}
+	return palette[c.index16()]
+}
+
+func (c Color) cast256() Color {
+	if c.indexed {
+		return c
+	}
+	return palette[c.index256()]
 }
 
 func (c Color) fg16() string {
@@ -361,38 +358,30 @@ func (c Color) bgTrue() string {
 }
 
 func (c Color) Fg() string {
-	var fg string
-	if c.def {
-		fg = "39"
-	} else {
+	fg := "39"
+	if !c.def {
 		switch colorMode {
 		case ColorMode16:
-			fg = c.cast().fg16()
+			fg = c.cast16().fg16()
 		case ColorMode256:
-			fg = c.cast().fg256()
+			fg = c.cast256().fg256()
 		case ColorModeTrue:
-			fg = c.cast().fgTrue()
-		default: // unknown color mode
-			fg = "39"
+			fg = c.fgTrue()
 		}
 	}
 	return fmt.Sprintf("\x1b[%sm", fg)
 }
 
 func (c Color) Bg() string {
-	var bg string
-	if c.def {
-		bg = "49"
-	} else {
+	bg := "49"
+	if !c.def {
 		switch colorMode {
 		case ColorMode16:
-			bg = c.cast().bg16()
+			bg = c.cast16().bg16()
 		case ColorMode256:
-			bg = c.cast().bg256()
+			bg = c.cast256().bg256()
 		case ColorModeTrue:
-			bg = c.cast().bgTrue()
-		default: // unknown color mode
-			bg = "49"
+			bg = c.bgTrue()
 		}
 	}
 	return fmt.Sprintf("\x1b[%sm", bg)
