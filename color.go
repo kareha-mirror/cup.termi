@@ -205,6 +205,8 @@ func parseNamedColor(s string) (Color, error) {
 }
 
 func ParseColor(s string) (Color, error) {
+	s = strings.TrimSpace(s)
+
 	// try parse as RGB hex
 	if len(s) == 6 {
 		c, err := parseHexColor(s)
@@ -329,7 +331,7 @@ func (c Color) fg16() string {
 	} else {
 		code = 30 + c.index
 	}
-	return fmt.Sprintf("\x1b[%dm", code)
+	return fmt.Sprintf("%d", code)
 }
 
 func (c Color) bg16() string {
@@ -339,53 +341,59 @@ func (c Color) bg16() string {
 	} else {
 		code = 40 + c.index
 	}
-	return fmt.Sprintf("\x1b[%dm", code)
+	return fmt.Sprintf("%d", code)
 }
 
 func (c Color) fg256() string {
-	return fmt.Sprintf("\x1b[38;5;%dm", c.index)
+	return fmt.Sprintf("38;5;%d", c.index)
 }
 
 func (c Color) bg256() string {
-	return fmt.Sprintf("\x1b[48;5;%dm", c.index)
+	return fmt.Sprintf("48;5;%d", c.index)
 }
 
 func (c Color) fgTrue() string {
-	return fmt.Sprintf("\x1b[38;2;%d;%d;%dm", c.r, c.g, c.b)
+	return fmt.Sprintf("38;2;%d;%d;%d", c.r, c.g, c.b)
 }
 
 func (c Color) bgTrue() string {
-	return fmt.Sprintf("\x1b[48;2;%d;%d;%dm", c.r, c.g, c.b)
+	return fmt.Sprintf("48;2;%d;%d;%d", c.r, c.g, c.b)
 }
 
 func (c Color) Fg() string {
+	var fg string
 	if c.def {
-		return "\x1b[39m"
+		fg = "39"
+	} else {
+		switch colorMode {
+		case ColorMode16:
+			fg = c.cast().fg16()
+		case ColorMode256:
+			fg = c.cast().fg256()
+		case ColorModeTrue:
+			fg = c.cast().fgTrue()
+		default: // unknown color mode
+			fg = "39"
+		}
 	}
-	switch colorMode {
-	case ColorMode16:
-		return c.cast().fg16()
-	case ColorMode256:
-		return c.cast().fg256()
-	case ColorModeTrue:
-		return c.cast().fgTrue()
-	default:
-		return "(unknown color mode)"
-	}
+	return fmt.Sprintf("\x1b[%sm", fg)
 }
 
 func (c Color) Bg() string {
+	var bg string
 	if c.def {
-		return "\x1b[49m"
+		bg = "49"
+	} else {
+		switch colorMode {
+		case ColorMode16:
+			bg = c.cast().bg16()
+		case ColorMode256:
+			bg = c.cast().bg256()
+		case ColorModeTrue:
+			bg = c.cast().bgTrue()
+		default: // unknown color mode
+			bg = "49"
+		}
 	}
-	switch colorMode {
-	case ColorMode16:
-		return c.cast().bg16()
-	case ColorMode256:
-		return c.cast().bg256()
-	case ColorModeTrue:
-		return c.cast().bgTrue()
-	default:
-		return "(unknown color mode)"
-	}
+	return fmt.Sprintf("\x1b[%sm", bg)
 }
