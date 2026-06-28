@@ -4,7 +4,13 @@ import (
 	"unicode"
 )
 
-func IsWide(r rune) bool {
+var TabWidth = 4
+
+func isControl(r rune) bool {
+	return r < 32 || (r >= 0x7f && r < 0xa0)
+}
+
+func isWide(r rune) bool {
 	return r >= 0x1100 && (r <= 0x115f || // Hangul Jamo
 		r == 0x2329 || r == 0x232a ||
 		(r >= 0x2e80 && r <= 0xa4cf) ||
@@ -16,24 +22,14 @@ func IsWide(r rune) bool {
 		(r >= 0xffe0 && r <= 0xffe6))
 }
 
-func IsEmoji(r rune) bool {
+func isEmoji(r rune) bool {
 	return r >= 0x1f300 && r <= 0x1faff
 }
 
-var TabWidth = 4
-
-func runeWidth(r rune, x int) int {
-	// tab
-	if r == '\t' {
-		return TabWidth - (x % TabWidth)
-	}
-
+func RuneWidth(r rune) int {
 	// control code
-	if r == 0 {
-		return 0
-	}
-	if r < 32 || (r >= 0x7f && r < 0xa0) {
-		return 0
+	if isControl(r) {
+		return 2
 	}
 
 	// combining mark
@@ -42,16 +38,26 @@ func runeWidth(r rune, x int) int {
 	}
 
 	// wide (loose CJK)
-	if IsWide(r) {
+	if isWide(r) {
 		return 2
 	}
 
 	// emoji
-	if IsEmoji(r) {
+	if isEmoji(r) {
 		return 2
 	}
 
 	return 1
+}
+
+func RuneWidthWithTab(r rune, x int) int {
+	// tab
+	if r == '\t' {
+		return TabWidth - (x % TabWidth)
+	}
+
+	// others
+	return RuneWidth(r)
 }
 
 func StringWidth(s string, col int) int {
@@ -61,7 +67,7 @@ func StringWidth(s string, col int) int {
 		if i >= col {
 			break
 		}
-		w := runeWidth(r, sum)
+		w := RuneWidthWithTab(r, sum)
 		sum += w
 		i++
 	}
@@ -78,9 +84,18 @@ func Render(s string) string {
 				buf = append(buf, ' ')
 			}
 			x += spaces
+		} else if r < 0x20 {
+			buf = append(buf, '^')
+			buf = append(buf, r+'@')
+		} else if r == 0x7f {
+			buf = append(buf, '^')
+			buf = append(buf, '?')
+		} else if r >= 0x80 && r < 0xa0 {
+			buf = append(buf, '^')
+			buf = append(buf, '=')
 		} else {
 			buf = append(buf, r)
-			x += runeWidth(r, x)
+			x += RuneWidthWithTab(r, x)
 		}
 	}
 	return string(buf)
@@ -94,7 +109,7 @@ func Wrap(s string, w int, tail bool) []string {
 	runes := []rune{}
 	sum := 0
 	for _, r := range s {
-		rw := runeWidth(r, sum)
+		rw := RuneWidthWithTab(r, sum)
 		sum += rw
 		if sum > w {
 			lines = append(lines, string(runes))
