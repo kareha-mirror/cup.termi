@@ -2,25 +2,32 @@ package termi
 
 type RuneBuf struct {
 	buf []rune
+	s   string
 }
 
 func (b *RuneBuf) WriteRune(r rune) {
 	b.buf = append(b.buf, r)
+	b.s = ""
 }
 
 func (b *RuneBuf) WriteString(s string) {
 	b.buf = append(b.buf, []rune(s)...)
+	b.s = ""
 }
 
 func (b *RuneBuf) String() string {
-	return string(b.buf)
+	if b.s == "" {
+		b.s = string(b.buf)
+	}
+	return b.s
 }
 
 func (b *RuneBuf) Reset() {
 	b.buf = b.buf[:0]
+	b.s = ""
 }
 
-func (b *RuneBuf) Len() int {
+func (b *RuneBuf) RuneCount() int {
 	return len(b.buf)
 }
 
@@ -43,6 +50,7 @@ func (b *RuneBuf) RemoveHead() bool {
 		return false
 	}
 	b.buf = b.buf[1:]
+	b.s = ""
 	return true
 }
 
@@ -51,18 +59,19 @@ func (b *RuneBuf) RemoveTail() bool {
 		return false
 	}
 	b.buf = b.buf[:len(b.buf)-1]
+	b.s = ""
 	return true
 }
 
-func (b *RuneBuf) Substring(from, to int) (string, bool) {
+func (b *RuneBuf) Body(from, to int) RuneBuf {
 	if from < 0 || from > len(b.buf)-1 {
-		return "", false
+		return RuneBuf{}
 	}
 	if to < 0 || to > len(b.buf) {
-		return "", false
+		return RuneBuf{}
 	}
 	if to < from {
-		return "", false
+		return RuneBuf{}
 	}
-	return string(b.buf[from:to]), true
+	return RuneBuf{buf: append([]rune{}, b.buf[from:to]...)}
 }
