@@ -63,15 +63,15 @@ func (b *RuneBuf) RemoveTail() bool {
 	return true
 }
 
-func (b *RuneBuf) Body(from, to int) RuneBuf {
+func (b *RuneBuf) Body(from, to int) *RuneBuf {
 	if from < 0 || from > len(b.buf)-1 {
-		return RuneBuf{}
+		return nil
 	}
 	if to < 0 || to > len(b.buf) {
-		return RuneBuf{}
+		return nil
 	}
 	if to < from {
-		return RuneBuf{}
+		return nil
 	}
-	return RuneBuf{buf: append([]rune{}, b.buf[from:to]...)}
+	return &RuneBuf{buf: append([]rune{}, b.buf[from:to]...)}
 }
