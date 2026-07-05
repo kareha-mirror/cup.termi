@@ -25,7 +25,7 @@ func Lock(cfgDir string) error {
 	}
 	path := lockDirPath(cfgDir)
 	for i := 0; i < RetryCount; i++ {
-		if err := os.Mkdir(path, 0777); err != nil {
+		if err := os.Mkdir(path, 0777); err == nil {
 			return nil
 		}
 		time.Sleep(SleepDuration)
