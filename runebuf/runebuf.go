@@ -1,4 +1,4 @@
-package termi
+package runebuf
 
 type RuneBuf struct {
 	buf []rune
