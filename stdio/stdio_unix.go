@@ -1,6 +1,6 @@
 //go:build unix
 
-package termi
+package stdio
 
 import (
 	"os"
@@ -16,7 +16,7 @@ type Stdio struct {
 	Stderr *os.File
 }
 
-func DupStdio() (Stdio, error) {
+func Dup() (Stdio, error) {
 	stdin, err := unix.Dup(syscall.Stdin)
 	if err != nil {
 		return Stdio{}, err

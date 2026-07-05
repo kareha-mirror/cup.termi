@@ -1,6 +1,6 @@
 //go:build windows
 
-package termi
+package stdio
 
 import (
 	"os"
@@ -13,7 +13,7 @@ type Stdio struct {
 	Stderr *os.File
 }
 
-func DupStdio() (Stdio, error) {
+func Dup() (Stdio, error) {
 	return Stdio{
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,
