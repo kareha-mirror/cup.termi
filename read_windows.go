@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func startRead() error {
+func initRead() error {
 	return nil
 }
 

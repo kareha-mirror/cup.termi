@@ -1,4 +1,4 @@
-package runebuf
+package rbuf
 
 type RuneBuf struct {
 	buf []rune

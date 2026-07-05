@@ -1,11 +1,11 @@
-package termi
+package tmux
 
 import (
 	"os"
 	"strings"
 )
 
-func IsTmux() bool {
+func Exists() bool {
 	return os.Getenv("TMUX") != "" ||
 		strings.Contains(os.Getenv("TERM"), "tmux")
 }

@@ -14,7 +14,7 @@ var readWakerW int
 var readFDs []unix.PollFd
 var readBuf [1]byte
 
-func startRead() error {
+func initRead() error {
 	var pipe [2]int
 	err := unix.Pipe(pipe[:])
 	if err != nil {

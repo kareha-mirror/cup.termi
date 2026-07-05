@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"tea.kareha.org/cup/termi"
+	"tea.kareha.org/cup/termi/suspend"
 )
 
 func usage() {
@@ -22,13 +23,13 @@ func start() {
 	fmt.Print(termi.HideCursor)
 	fmt.Print(termi.HomeCursor)
 
-	termi.StartKey()
-	termi.StartSig()
+	termi.InitKey()
+	suspend.Init()
 }
 
 func finish() {
-	termi.StopSig()
-	termi.StopKey()
+	suspend.Finish()
+	termi.FinishKey()
 
 	fmt.Print(termi.Clear)
 	fmt.Print(termi.HomeCursor)

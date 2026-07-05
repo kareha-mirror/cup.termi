@@ -74,8 +74,8 @@ func readByteTimeout(d time.Duration) (byte, bool) {
 	}
 }
 
-func StartKey() error {
-	err := startRead()
+func InitKey() error {
+	err := initRead()
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func StartKey() error {
 	return nil
 }
 
-func StopKey() error {
+func FinishKey() error {
 	err := stopRead()
 	if err != nil {
 		return err

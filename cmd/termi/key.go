@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"tea.kareha.org/cup/termi"
+	"tea.kareha.org/cup/termi/suspend"
 )
 
 func drawKey(key termi.Key) {
@@ -47,25 +48,25 @@ func keyMain() {
 				case 'q':
 					return
 				case '\x1a': // Ctrl-Z
-					termi.Suspend()
+					suspend.Suspend()
 				}
 			}
 			drawKey(key)
-		case sig := <-termi.Sigs():
-			if sig == termi.SigStop {
-				termi.StopKey()
+		case sig := <-suspend.Sigs():
+			if sig == suspend.SigStop {
+				termi.FinishKey()
 				fmt.Print(termi.ResetAlternate)
 				termi.Cooked()
 				fmt.Print(termi.ShowCursor)
 
-				termi.ForceSuspend()
+				suspend.ForceSuspend()
 				for {
-					sig := <-termi.Sigs()
-					if sig == termi.SigCont {
+					sig := <-suspend.Sigs()
+					if sig == suspend.SigCont {
 						fmt.Print(termi.HideCursor)
 						termi.Raw()
 						fmt.Print(termi.SetAlternate)
-						termi.StartKey()
+						termi.InitKey()
 						break
 					}
 				}

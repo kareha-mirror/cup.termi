@@ -1,4 +1,4 @@
-package termi
+package suspend
 
 type Sig int
 

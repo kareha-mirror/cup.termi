@@ -1,12 +1,12 @@
 //go:build windows
 
-package termi
+package suspend
 
-func StartSig() {
+func Init() {
 	sigCh = make(chan Sig, 32)
 }
 
-func StopSig() {
+func Finish() {
 	close(sigCh)
 }
 

@@ -1,6 +1,6 @@
 //go:build unix
 
-package termi
+package suspend
 
 import (
 	"os"
@@ -13,7 +13,7 @@ var signalWG sync.WaitGroup
 var signalCh chan os.Signal
 var signalDone chan struct{}
 
-func StartSig() {
+func Init() {
 	signalCh = make(chan os.Signal, 1)
 	signalDone = make(chan struct{})
 	sigCh = make(chan Sig, 32)
@@ -44,7 +44,7 @@ func StartSig() {
 	}()
 }
 
-func StopSig() {
+func Finish() {
 	close(signalDone)
 	signalWG.Wait()
 }
