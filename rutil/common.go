@@ -1,5 +1,19 @@
 package rutil
 
+import (
+	"strings"
+)
+
+func FilterByPrefix(list []string, prefix string) []string {
+	result := []string{}
+	for _, elem := range list {
+		if strings.HasPrefix(elem, prefix) {
+			result = append(result, elem)
+		}
+	}
+	return result
+}
+
 func CommonPrefix(list []string) string {
 	if len(list) == 0 {
 		return ""
