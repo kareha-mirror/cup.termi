@@ -24,6 +24,9 @@ func GetColorMode() ColorMode {
 	if strings.Contains(os.Getenv("TERM"), "256color") {
 		return ColorMode256
 	}
+	if os.Getenv("WT_SESSION") != "" {
+		return ColorModeTrue
+	}
 	return ColorMode16
 }
 

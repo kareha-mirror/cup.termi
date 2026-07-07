@@ -11,7 +11,7 @@ func initRead() error {
 }
 
 func stopRead() error {
-	return nil
+	return os.Stdin.Close()
 }
 
 func finishRead() error {
