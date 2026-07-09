@@ -1,6 +1,8 @@
 package termi
 
 import (
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 	"unicode/utf8"
@@ -172,22 +174,6 @@ func readKey() Key {
 
 	key := []byte{b}
 
-	skip := func(b byte) {
-		if b >= 0x40 && b <= 0x7e {
-			return
-		}
-		for {
-			b, ok = readByte()
-			if !ok {
-				return
-			}
-			key = append(key, b)
-			if b >= 0x40 && b <= 0x7e {
-				return
-			}
-		}
-	}
-
 	if EscapeTimeout <= 0 {
 		b, ok = readByte()
 		if !ok {
@@ -207,11 +193,37 @@ func readKey() Key {
 		return Key{KeyRune, rune(key[0]), ""}
 	}
 
-	b, ok = readByte()
-	if !ok {
-		return Key{KeyQuit, 0, ""}
+	params := strings.Builder{}
+	for {
+		b, ok = readByte()
+		if !ok {
+			return Key{KeyQuit, 0, ""}
+		}
+		key = append(key, b)
+		if b < 0x30 || b > 0x3f {
+			break
+		}
+		params.WriteRune(rune(b))
 	}
-	key = append(key, b)
+
+	//inter := strings.Builder{}
+	for {
+		if b < 0x20 || b > 0x2f {
+			break
+		}
+		//inter.WriteRune(rune(b))
+		b, ok = readByte()
+		if !ok {
+			return Key{KeyQuit, 0, ""}
+		}
+		key = append(key, b)
+	}
+
+	if b < 0x40 || b > 0x7e { // final
+		keyBuf = append(keyBuf, key[1:]...)
+		return Key{KeyRune, rune(key[0]), ""}
+	}
+
 	switch b {
 	case 'A':
 		return Key{KeyUp, 0, string(key)}
@@ -221,47 +233,35 @@ func readKey() Key {
 		return Key{KeyRight, 0, string(key)}
 	case 'D':
 		return Key{KeyLeft, 0, string(key)}
-	}
-
-	if b == '2' {
-		b, ok = readByte()
-		if !ok {
-			return Key{KeyQuit, 0, ""}
-		}
-		key = append(key, b)
-		if b != '0' {
-			skip(b)
-			return Key{KeyUnknown, 0, string(key)}
-		}
-
-		b, ok = readByte()
-		if !ok {
-			return Key{KeyQuit, 0, ""}
-		}
-		key = append(key, b)
-		if b != '0' && b != '1' {
-			skip(b)
-			return Key{KeyUnknown, 0, string(key)}
-		}
-
-		b2, ok := readByte()
-		if !ok {
-			return Key{KeyQuit, 0, ""}
-		}
-		key = append(key, b2)
-		if b2 != '~' {
-			skip(b2)
-			return Key{KeyUnknown, 0, string(key)}
-		}
-
-		if b == '0' {
+	case '~':
+		p := params.String()
+		switch p {
+		case "200":
 			return Key{KeyBeginPaste, 0, string(key)}
-		} else {
+		case "201":
 			return Key{KeyEndPaste, 0, string(key)}
+		default:
+			return Key{KeyUnknown, 0, string(key)}
 		}
+	case '_':
+		parts := strings.Split(params.String(), ";")
+		if len(parts) != 6 {
+			return Key{KeyUnknown, 0, string(key)}
+		}
+		kd, err := strconv.ParseUint(parts[3], 10, 32)
+		if err != nil {
+			return Key{KeyUnknown, 0, string(key)}
+		}
+		if kd != 1 {
+			return Key{KeyUnknown, 0, string(key)}
+		}
+		uc, err := strconv.ParseUint(parts[2], 10, 32)
+		if err != nil {
+			return Key{KeyUnknown, 0, string(key)}
+		}
+		return Key{KeyRune, rune(uc), ""}
 	}
 
-	skip(b)
 	return Key{KeyUnknown, 0, string(key)}
 }
 
