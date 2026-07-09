@@ -248,16 +248,19 @@ func readKey() Key {
 		if len(parts) != 6 {
 			return Key{KeyUnknown, 0, string(key)}
 		}
+		uc, err := strconv.ParseUint(parts[2], 10, 32)
+		if err != nil {
+			return Key{KeyUnknown, 0, string(key)}
+		}
+		if uc == 0 {
+			return Key{KeyUnknown, 0, string(key)}
+		}
 		kd, err := strconv.ParseUint(parts[3], 10, 32)
 		if err != nil {
 			return Key{KeyUnknown, 0, string(key)}
 		}
 		if kd != 1 {
-			return Key{KeyUnknown, 0, string(key)}
-		}
-		uc, err := strconv.ParseUint(parts[2], 10, 32)
-		if err != nil {
-			return Key{KeyUnknown, 0, string(key)}
+			return Key{KeyUnknown, 0, ""}
 		}
 		return Key{KeyRune, rune(uc), ""}
 	}
