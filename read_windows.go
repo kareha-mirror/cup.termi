@@ -3,15 +3,21 @@
 package termi
 
 import (
+	"fmt"
 	"os"
+	"sync/atomic"
 )
 
+var readAlive = atomic.Bool{}
+
 func initRead() error {
+	readAlive.Store(true)
 	return nil
 }
 
 func stopRead() error {
-	return os.Stdin.Close()
+	readAlive.Store(false)
+	return nil
 }
 
 func finishRead() error {
@@ -27,9 +33,16 @@ func read() (byte, error) {
 			return 0, err
 		}
 		if n == 1 {
+			if !readAlive.Load() {
+				return 0, fmt.Errorf("read stopped")
+			}
 			b := readBuf[0]
 			checkEscape(b)
 			return b, nil
 		}
 	}
+}
+
+func waitKey() {
+	//keyWG.Wait() // XXX
 }

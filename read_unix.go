@@ -82,3 +82,7 @@ func read() (byte, error) {
 		return 0, fmt.Errorf("invalid state")
 	}
 }
+
+func waitKey() {
+	keyWG.Wait()
+}
