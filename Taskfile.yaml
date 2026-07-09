@@ -5,7 +5,7 @@ tasks:
   default:
     cmds:
       - go build -o termi ./cmd/termi
-      - go build . ./lock ./rbuf ./rkind ./rutil ./stdio ./suspend ./tmux
+      - go build . ./lock ./pity ./rbuf ./rkind ./rutil ./stdio ./suspend ./tmux
   clean:
     cmds:
       - rm -f termi
@@ -25,4 +25,4 @@ tasks:
       GOARCH: amd64
     cmds:
       - go build -o termi.exe ./cmd/termi
-      - go build . ./lock ./rbuf ./rkind ./rutil ./stdio ./suspend ./tmux
+      - go build . ./lock ./pity ./rbuf ./rkind ./rutil ./stdio ./suspend ./tmux
