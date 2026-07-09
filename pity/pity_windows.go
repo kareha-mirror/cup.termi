@@ -48,11 +48,12 @@ func (p *Pity) Close() error {
 }
 
 func (p *Pity) Wait() error {
+	defer p.Close()
+
 	if _, err :=
 		windows.WaitForSingleObject(p.h, windows.INFINITE); err != nil {
 		return err
 	}
-
 	var code uint32
 	if err := windows.GetExitCodeProcess(p.h, &code); err != nil {
 		return err

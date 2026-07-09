@@ -46,6 +46,8 @@ func (p *Pity) Close() error {
 }
 
 func (p *Pity) Wait() error {
+	defer p.Close()
+
 	err := p.c.Wait()
 	if err == nil {
 		return nil
