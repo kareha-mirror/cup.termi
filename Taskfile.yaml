@@ -1,0 +1,28 @@
+version: "3"
+env:
+  CGO_ENABLED: 0
+tasks:
+  default:
+    cmds:
+      - go build -o termi ./cmd/termi
+      - go build . ./lock ./rbuf ./rkind ./rutil ./stdio ./suspend ./tmux
+  clean:
+    cmds:
+      - rm -f termi
+      - rm -f termi.exe
+  test:
+    cmds:
+      - go test ./...
+  run:
+    cmds:
+      - go run ./cmd/termi
+  fmt:
+    cmds:
+      - go fmt ./...
+  windows:
+    env:
+      GOOS: windows
+      GOARCH: amd64
+    cmds:
+      - go build -o termi.exe ./cmd/termi
+      - go build . ./lock ./rbuf ./rkind ./rutil ./stdio ./suspend ./tmux
