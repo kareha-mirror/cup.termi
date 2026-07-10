@@ -25,6 +25,9 @@ const (
 
 	KeyUnknown
 	KeyQuit
+
+	KeyEscapeDown
+	KeyEscapeUp
 )
 
 type Key struct {
@@ -258,6 +261,13 @@ func readKey() Key {
 		kd, err := strconv.ParseUint(parts[3], 10, 32)
 		if err != nil {
 			return Key{KeyUnknown, 0, string(key)}
+		}
+		if uc == 0x1b {
+			if kd == 1 {
+				return Key{KeyEscapeDown, 0, string(key)}
+			} else {
+				return Key{KeyEscapeUp, 0, string(key)}
+			}
 		}
 		if kd != 1 {
 			return Key{KeyUnknown, 0, ""}
