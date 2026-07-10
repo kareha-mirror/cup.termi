@@ -86,3 +86,19 @@ func read() (byte, error) {
 func waitKey() {
 	keyWG.Wait()
 }
+
+func spawnReader() {
+	keyWG.Add(1)
+	go func() {
+		defer keyWG.Done()
+		for {
+			b, err := read()
+			if err != nil {
+				break
+			}
+			readCh <- b
+		}
+		close(readDone)
+		close(readCh)
+	}()
+}

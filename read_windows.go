@@ -3,25 +3,25 @@
 package termi
 
 import (
-	"fmt"
 	"os"
-	"sync/atomic"
+
+	"golang.org/x/sys/windows"
 )
 
-var readAlive = atomic.Bool{}
+var stopEvent windows.Handle
 
 func initRead() error {
-	readAlive.Store(true)
-	return nil
+	var err error
+	stopEvent, err = windows.CreateEvent(nil, 1, 0, nil)
+	return err
 }
 
 func stopRead() error {
-	readAlive.Store(false)
-	return nil
+	return windows.SetEvent(stopEvent)
 }
 
 func finishRead() error {
-	return nil
+	return windows.CloseHandle(stopEvent)
 }
 
 var readBuf [1]byte
@@ -33,9 +33,6 @@ func read() (byte, error) {
 			return 0, err
 		}
 		if n == 1 {
-			if !readAlive.Load() {
-				return 0, fmt.Errorf("read stopped")
-			}
 			b := readBuf[0]
 			checkEscape(b)
 			return b, nil
@@ -44,5 +41,39 @@ func read() (byte, error) {
 }
 
 func waitKey() {
-	//keyWG.Wait() // XXX
+	keyWG.Wait()
+}
+
+var readThread windows.Handle
+
+func spawnReader() {
+	keyWG.Add(1)
+	go func() {
+		defer keyWG.Done()
+
+		input := windows.Handle(os.Stdin.Fd())
+		handles := []windows.Handle{input, stopEvent}
+
+	loop:
+		for {
+			n, err := windows.WaitForMultipleObjects(
+				handles, false, windows.INFINITE,
+			)
+			if err != nil {
+				break
+			}
+			switch n {
+			case windows.WAIT_OBJECT_0:
+				b, err := read()
+				if err != nil {
+					break loop
+				}
+				readCh <- b
+			case windows.WAIT_OBJECT_0 + 1:
+				break loop
+			}
+		}
+		close(readDone)
+		close(readCh)
+	}()
 }

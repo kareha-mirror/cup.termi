@@ -90,19 +90,8 @@ func InitKey() error {
 	keyBuf = make([]byte, 0)
 	keyCh = make(chan Key, 32)
 
-	keyWG.Add(1)
-	go func() {
-		defer keyWG.Done()
-		for {
-			b, err := read()
-			if err != nil {
-				break
-			}
-			readCh <- b
-		}
-		close(readDone)
-		close(readCh)
-	}()
+	spawnReader()
+
 	keyWG.Add(1)
 	go func() {
 		defer keyWG.Done()
