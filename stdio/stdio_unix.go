@@ -5,9 +5,9 @@ package stdio
 import (
 	"os"
 	"os/exec"
-	"syscall"
+	//"syscall"
 
-	"golang.org/x/sys/unix"
+	//"golang.org/x/sys/unix"
 )
 
 type Stdio struct {
@@ -17,6 +17,7 @@ type Stdio struct {
 }
 
 func Dup() (Stdio, error) {
+/*
 	stdin, err := unix.Dup(syscall.Stdin)
 	if err != nil {
 		return Stdio{}, err
@@ -34,6 +35,12 @@ func Dup() (Stdio, error) {
 		Stdout: os.NewFile(uintptr(stdout), "(stdout)"),
 		Stderr: os.NewFile(uintptr(stderr), "(stderr)"),
 	}, nil
+*/
+	return Stdio{
+		Stdin: os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}, nil
 }
 
 func (s *Stdio) AttachTo(cmd *exec.Cmd) {
@@ -43,7 +50,9 @@ func (s *Stdio) AttachTo(cmd *exec.Cmd) {
 }
 
 func (s *Stdio) Close() {
+/*
 	s.Stdin.Close()
 	s.Stdout.Close()
 	s.Stderr.Close()
+*/
 }
