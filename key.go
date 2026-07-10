@@ -113,7 +113,7 @@ func FinishKey() error {
 	if err != nil {
 		return err
 	}
-	waitKey()
+	keyWG.Wait()
 	return finishRead()
 }
 

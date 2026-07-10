@@ -83,10 +83,6 @@ func read() (byte, error) {
 	}
 }
 
-func waitKey() {
-	keyWG.Wait()
-}
-
 func spawnReader() {
 	keyWG.Add(1)
 	go func() {

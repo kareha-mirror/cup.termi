@@ -40,12 +40,6 @@ func read() (byte, error) {
 	}
 }
 
-func waitKey() {
-	keyWG.Wait()
-}
-
-var readThread windows.Handle
-
 func spawnReader() {
 	keyWG.Add(1)
 	go func() {
