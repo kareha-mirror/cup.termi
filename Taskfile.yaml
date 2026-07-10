@@ -4,7 +4,7 @@ env:
 tasks:
   default:
     cmds:
-      - go build -o termi ./cmd/termi
+      - go build ./cmd/termi
       - go build . ./lock ./pity ./rbuf ./rkind ./rutil ./stdio ./suspend ./tmux
   clean:
     cmds:
