@@ -4,13 +4,15 @@ package termi
 
 import (
 	"os"
+	"unicode/utf16"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
 
 func isWindowsTerminal() bool {
-	return os.Getenv("WT_SESSION") != "" || os.Getenv("KAKIKO_RUNNING") != ""
+	//return os.Getenv("WT_SESSION") != ""
+	return false
 }
 
 var windowsTerminal = isWindowsTerminal()
@@ -76,6 +78,18 @@ func finishRead() error {
 
 var readBuf [1]byte
 
+var surrogatePending uint16
+var surrogateHasHigh bool
+var readRuneBuf []byte
+
+func isHighSurrogate(r uint16) bool {
+	return 0xd800 <= r && r <= 0xdbff
+}
+
+func isLowSurrogate(r uint16) bool {
+	return 0xdc00 <= r && r <= 0xdfff
+}
+
 func read() (byte, bool, error) {
 	if windowsTerminal {
 		for {
@@ -91,6 +105,13 @@ func read() (byte, bool, error) {
 		}
 	} else {
 		for {
+			if len(readRuneBuf) > 0 {
+				b := readRuneBuf[0]
+				readRuneBuf = readRuneBuf[1:]
+				checkEscape(b)
+				return b, true, nil
+			}
+
 			var rec InputRecord
 			var n uint32
 			err := ReadConsoleInput(windows.Handle(os.Stdin.Fd()), &rec, 1, &n)
@@ -104,10 +125,23 @@ func read() (byte, bool, error) {
 				if rec.KeyEvent.KeyDown == 0 {
 					return 0, false, nil
 				}
-				if rec.KeyEvent.UnicodeChar == 0 {
+				c := rec.KeyEvent.UnicodeChar
+				if c == 0 {
 					return 0, false, nil
 				}
-				b := byte(rec.KeyEvent.UnicodeChar)
+				if isHighSurrogate(c) {
+					surrogatePending = c
+					surrogateHasHigh = true
+					return 0, false, nil
+				}
+				if surrogateHasHigh && isLowSurrogate(c) {
+					r := utf16.DecodeRune(rune(surrogatePending), rune(c))
+					readRuneBuf = []byte(string(r))
+				} else {
+					readRuneBuf = []byte(string(c))
+				}
+				b := readRuneBuf[0]
+				readRuneBuf = readRuneBuf[1:]
 				checkEscape(b)
 				return b, true, nil
 			}
@@ -125,6 +159,18 @@ func spawnReader() {
 
 	loop:
 		for {
+			if len(readRuneBuf) > 0 {
+				b, ok, err := read()
+				if err != nil {
+					break loop
+				}
+				if !ok {
+					continue
+				}
+				readCh <- b
+				continue
+			}
+
 			n, err := windows.WaitForMultipleObjects(
 				handles, false, windows.INFINITE,
 			)
