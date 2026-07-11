@@ -10,7 +10,7 @@ import (
 )
 
 func isWindowsTerminal() bool {
-	return os.Getenv("WT_SESSION") != ""
+	return os.Getenv("WT_SESSION") != "" || os.Getenv("KAKIKO_RUNNING") != ""
 }
 
 var windowsTerminal = isWindowsTerminal()
