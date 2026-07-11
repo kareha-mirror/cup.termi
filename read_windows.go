@@ -69,7 +69,6 @@ func finishRead() error {
 
 var surrogatePending uint16
 var surrogateHasHigh bool
-var readBuf []byte
 
 func isHighSurrogate(r uint16) bool {
 	return 0xd800 <= r && r <= 0xdbff
@@ -79,47 +78,39 @@ func isLowSurrogate(r uint16) bool {
 	return 0xdc00 <= r && r <= 0xdfff
 }
 
-func read() (byte, bool, error) {
+func read() (Key, bool, error) {
 	for {
-		if len(readBuf) > 0 {
-			b := readBuf[0]
-			readBuf = readBuf[1:]
-			checkEscape(b)
-			return b, true, nil
-		}
-
 		var rec InputRecord
 		var n uint32
 		err := ReadConsoleInput(windows.Handle(os.Stdin.Fd()), &rec, 1, &n)
 		if err != nil {
-			return 0, false, err
+			return Key{}, false, err
 		}
 		if n == 1 {
 			if rec.EventType != EventTypeKey {
-				return 0, false, nil
+				return Key{}, false, nil
 			}
 			if rec.KeyEvent.KeyDown == 0 {
-				return 0, false, nil
+				return Key{}, false, nil
 			}
 			c := rec.KeyEvent.UnicodeChar
 			if c == 0 {
-				return 0, false, nil
+				return Key{}, false, nil
 			}
 			if isHighSurrogate(c) {
 				surrogatePending = c
 				surrogateHasHigh = true
-				return 0, false, nil
+				return Key{}, false, nil
 			}
 			if surrogateHasHigh && isLowSurrogate(c) {
 				r := utf16.DecodeRune(rune(surrogatePending), rune(c))
-				readBuf = []byte(string(r))
+				checkEscape(r)
+				return Key{KeyRune, r, ""}, true, nil
 			} else {
-				readBuf = []byte(string(c))
+				r := rune(c)
+				checkEscape(r)
+				return Key{KeyRune, r, ""}, true, nil
 			}
-			b := readBuf[0]
-			readBuf = readBuf[1:]
-			checkEscape(b)
-			return b, true, nil
 		}
 	}
 }
@@ -134,18 +125,6 @@ func spawnReader() {
 
 	loop:
 		for {
-			if len(readBuf) > 0 {
-				b, ok, err := read()
-				if err != nil {
-					break loop
-				}
-				if !ok {
-					continue
-				}
-				readCh <- b
-				continue
-			}
-
 			n, err := windows.WaitForMultipleObjects(
 				handles, false, windows.INFINITE,
 			)
