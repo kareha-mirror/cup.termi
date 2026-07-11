@@ -10,16 +10,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func isWindowsTerminal() bool {
-	//return os.Getenv("WT_SESSION") != ""
-	return false
-}
-
-var windowsTerminal = isWindowsTerminal()
-
 var stopEvent windows.Handle
-
-var readThread windows.Handle
 
 var (
 	kernel32 = windows.NewLazySystemDLL("kernel32.dll")
@@ -76,11 +67,9 @@ func finishRead() error {
 	return windows.CloseHandle(stopEvent)
 }
 
-var readBuf [1]byte
-
 var surrogatePending uint16
 var surrogateHasHigh bool
-var readRuneBuf []byte
+var readBuf []byte
 
 func isHighSurrogate(r uint16) bool {
 	return 0xd800 <= r && r <= 0xdbff
@@ -91,60 +80,46 @@ func isLowSurrogate(r uint16) bool {
 }
 
 func read() (byte, bool, error) {
-	if windowsTerminal {
-		for {
-			n, err := os.Stdin.Read(readBuf[:])
-			if err != nil {
-				return 0, false, err
-			}
-			if n == 1 {
-				b := readBuf[0]
-				checkEscape(b)
-				return b, true, nil
-			}
+	for {
+		if len(readBuf) > 0 {
+			b := readBuf[0]
+			readBuf = readBuf[1:]
+			checkEscape(b)
+			return b, true, nil
 		}
-	} else {
-		for {
-			if len(readRuneBuf) > 0 {
-				b := readRuneBuf[0]
-				readRuneBuf = readRuneBuf[1:]
-				checkEscape(b)
-				return b, true, nil
-			}
 
-			var rec InputRecord
-			var n uint32
-			err := ReadConsoleInput(windows.Handle(os.Stdin.Fd()), &rec, 1, &n)
-			if err != nil {
-				return 0, false, err
+		var rec InputRecord
+		var n uint32
+		err := ReadConsoleInput(windows.Handle(os.Stdin.Fd()), &rec, 1, &n)
+		if err != nil {
+			return 0, false, err
+		}
+		if n == 1 {
+			if rec.EventType != EventTypeKey {
+				return 0, false, nil
 			}
-			if n == 1 {
-				if rec.EventType != EventTypeKey {
-					return 0, false, nil
-				}
-				if rec.KeyEvent.KeyDown == 0 {
-					return 0, false, nil
-				}
-				c := rec.KeyEvent.UnicodeChar
-				if c == 0 {
-					return 0, false, nil
-				}
-				if isHighSurrogate(c) {
-					surrogatePending = c
-					surrogateHasHigh = true
-					return 0, false, nil
-				}
-				if surrogateHasHigh && isLowSurrogate(c) {
-					r := utf16.DecodeRune(rune(surrogatePending), rune(c))
-					readRuneBuf = []byte(string(r))
-				} else {
-					readRuneBuf = []byte(string(c))
-				}
-				b := readRuneBuf[0]
-				readRuneBuf = readRuneBuf[1:]
-				checkEscape(b)
-				return b, true, nil
+			if rec.KeyEvent.KeyDown == 0 {
+				return 0, false, nil
 			}
+			c := rec.KeyEvent.UnicodeChar
+			if c == 0 {
+				return 0, false, nil
+			}
+			if isHighSurrogate(c) {
+				surrogatePending = c
+				surrogateHasHigh = true
+				return 0, false, nil
+			}
+			if surrogateHasHigh && isLowSurrogate(c) {
+				r := utf16.DecodeRune(rune(surrogatePending), rune(c))
+				readBuf = []byte(string(r))
+			} else {
+				readBuf = []byte(string(c))
+			}
+			b := readBuf[0]
+			readBuf = readBuf[1:]
+			checkEscape(b)
+			return b, true, nil
 		}
 	}
 }
@@ -159,7 +134,7 @@ func spawnReader() {
 
 	loop:
 		for {
-			if len(readRuneBuf) > 0 {
+			if len(readBuf) > 0 {
 				b, ok, err := read()
 				if err != nil {
 					break loop
