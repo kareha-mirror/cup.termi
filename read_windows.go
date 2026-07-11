@@ -3,25 +3,65 @@
 package termi
 
 import (
+	"fmt"
 	"os"
+	"runtime"
+	"syscall"
 
 	"golang.org/x/sys/windows"
 )
 
+func isWindowsTerminal() bool {
+	return os.Getenv("WT_SESSION") != ""
+}
+
+var windowsTerminal = isWindowsTerminal()
+
 var stopEvent windows.Handle
 
+var readThread windows.Handle
+
 func initRead() error {
-	var err error
-	stopEvent, err = windows.CreateEvent(nil, 1, 0, nil)
-	return err
+	if windowsTerminal {
+		var err error
+		stopEvent, err = windows.CreateEvent(nil, 1, 0, nil)
+		return err
+	} else {
+		return nil
+	}
+}
+
+var (
+	kernel32 = windows.NewLazySystemDLL("kernel32.dll")
+
+	procCancelSynchronousIo = kernel32.NewProc("CancelSynchronousIo")
+)
+
+func CancelSynchronousIo(h windows.Handle) error {
+	r1, _, e1 := procCancelSynchronousIo.Call(uintptr(h))
+	if r1 == 0 {
+		if e1 != windows.ERROR_SUCCESS {
+			return e1
+		}
+		return syscall.EINVAL
+	}
+	return nil
 }
 
 func stopRead() error {
-	return windows.SetEvent(stopEvent)
+	if windowsTerminal {
+		return windows.SetEvent(stopEvent)
+	} else {
+		return CancelSynchronousIo(readThread)
+	}
 }
 
 func finishRead() error {
-	return windows.CloseHandle(stopEvent)
+	if windowsTerminal {
+		return windows.CloseHandle(stopEvent)
+	} else {
+		return fmt.Errorf("not supported yet")
+	}
 }
 
 var readBuf [1]byte
@@ -40,7 +80,7 @@ func read() (byte, error) {
 	}
 }
 
-func spawnReader() {
+func spawnReaderForWindowsTerminal() {
 	keyWG.Add(1)
 	go func() {
 		defer keyWG.Done()
@@ -70,4 +110,47 @@ func spawnReader() {
 		close(readDone)
 		close(readCh)
 	}()
+}
+
+func spawnReaderForOtherTerminals() {
+	keyWG.Add(1)
+	go func() {
+		defer keyWG.Done()
+
+		runtime.LockOSThread()
+		defer runtime.UnlockOSThread()
+
+		h, err := windows.OpenThread(
+			windows.THREAD_TERMINATE,
+			false,
+			windows.GetCurrentThreadId(),
+		)
+		if err != nil {
+			// XXX inform error
+			close(readDone)
+			close(readCh)
+			return
+		}
+		defer windows.CloseHandle(h)
+
+		readThread = h
+
+		for {
+			b, err := read()
+			if err != nil {
+				break
+			}
+			readCh <- b
+		}
+		close(readDone)
+		close(readCh)
+	}()
+}
+
+func spawnReader() {
+	if windowsTerminal {
+		spawnReaderForWindowsTerminal()
+	} else {
+		spawnReaderForOtherTerminals()
+	}
 }
