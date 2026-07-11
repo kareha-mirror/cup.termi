@@ -3,7 +3,6 @@
 package termi
 
 import (
-	"fmt"
 	"os"
 	"runtime"
 	"syscall"
@@ -68,11 +67,7 @@ var readBuf [1]byte
 
 func read() (byte, error) {
 	for {
-		var n uint32
-		err := windows.ReadFile(
-			windows.Handle(os.Stdin.Fd()), readBuf[:], &n, nil,
-		)
-		fmt.Fprintf(os.Stderr, "(%d,%v)", n, err) // XXX debug
+		n, err := os.Stdin.Read(readBuf[:])
 		if err != nil {
 			return 0, err
 		}
