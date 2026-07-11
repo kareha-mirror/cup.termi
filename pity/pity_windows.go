@@ -20,6 +20,7 @@ func Start(cmd string, args ...string) (*Pity, error) {
 	if err != nil {
 		return nil, err
 	}
+	args = append([]string{cmd}, args...)
 	_, h, err := f.Spawn(cmd, args, nil)
 	if err != nil {
 		return nil, err
