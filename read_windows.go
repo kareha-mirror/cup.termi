@@ -104,6 +104,9 @@ func read() (byte, bool, error) {
 				if rec.KeyEvent.KeyDown == 0 {
 					return 0, false, nil
 				}
+				if rec.KeyEvent.UnicodeChar == 0 {
+					return 0, false, nil
+				}
 				b := byte(rec.KeyEvent.UnicodeChar)
 				checkEscape(b)
 				return b, true, nil
