@@ -1,7 +1,7 @@
 package rutil
 
 func Index(s string, col int) int {
-	for i, _ := range s {
+	for i := range s {
 		if col < 1 {
 			return i
 		}
