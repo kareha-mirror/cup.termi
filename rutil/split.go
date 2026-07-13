@@ -1,6 +1,6 @@
 package rutil
 
-func Index(s string, col int) int {
+func ByteIndex(s string, col int) int {
 	for i := range s {
 		if col < 1 {
 			return i
@@ -11,11 +11,11 @@ func Index(s string, col int) int {
 }
 
 func Head(s string, end int) string {
-	return s[:Index(s, end)]
+	return s[:ByteIndex(s, end)]
 }
 
 func Tail(s string, start int) string {
-	i := Index(s, start)
+	i := ByteIndex(s, start)
 	if i >= len(s) {
 		return ""
 	}
@@ -23,16 +23,23 @@ func Tail(s string, start int) string {
 }
 
 func Body(s string, start, end int) string {
-	i := Index(s, start)
+	if start < 0 {
+		start = 0
+	}
+	if end <= start {
+		return ""
+	}
+
+	i := ByteIndex(s, start)
 	if i >= len(s) {
 		return ""
 	}
-	j := Index(s[i:], end-start)
+	j := ByteIndex(s[i:], end-start)
 	return s[i : i+j]
 }
 
 func Split(s string, col int) (string, string) {
-	i := Index(s, col)
+	i := ByteIndex(s, col)
 	if i >= len(s) {
 		return s, ""
 	}
@@ -40,14 +47,19 @@ func Split(s string, col int) (string, string) {
 }
 
 func SplitBody(s string, start, end int) (string, string, string) {
-	i := Index(s, start)
+	if start < 0 {
+		start = 0
+	}
+	if end <= start {
+		head, tail := Split(s, start)
+		return head, "", tail
+	}
+
+	i := ByteIndex(s, start)
 	if i >= len(s) {
 		return s, "", ""
 	}
 	body := s[i:]
-	j := Index(body, end-start)
-	if j >= len(body) {
-		return s[:i], body, ""
-	}
+	j := ByteIndex(body, end-start)
 	return s[:i], body[:j], body[j:]
 }

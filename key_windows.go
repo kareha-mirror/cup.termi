@@ -6,15 +6,17 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf16"
 )
 
-var readCh chan Key
+var readChan chan Key
 var readDone chan struct{}
 var keyBuf []Key
 
 func internalInitKey() {
-	readCh = make(chan Key, 32)
+	readChan = make(chan Key, 32)
 	readDone = make(chan struct{})
+	keySurrogate = surrogateState{}
 }
 
 func readKeyElem() (Key, bool) {
@@ -25,7 +27,7 @@ func readKeyElem() (Key, bool) {
 	}
 
 	select {
-	case k := <-readCh:
+	case k := <-readChan:
 		return k, true
 	case <-readDone:
 		return Key{}, false
@@ -40,7 +42,7 @@ func readKeyElemTimeout(d time.Duration) (Key, bool) {
 	}
 
 	select {
-	case k := <-readCh:
+	case k := <-readChan:
 		return k, true
 	case <-readDone:
 		return Key{}, false
@@ -63,7 +65,7 @@ func keysToString(keys []Key) string {
 func readKey() Key {
 	k, ok := readKeyElem()
 	if !ok {
-		return Key{KeyQuit, 0, ""}
+		return Key{keyQuit, 0, ""}
 	}
 	if k.Kind != KeyRune {
 		return k
@@ -77,7 +79,7 @@ func readKey() Key {
 	if EscapeTimeout <= 0 {
 		k, ok = readKeyElem()
 		if !ok {
-			return Key{KeyQuit, 0, ""}
+			return Key{keyQuit, 0, ""}
 		}
 	} else {
 		var ok bool
@@ -101,7 +103,7 @@ func readKey() Key {
 	for {
 		k, ok = readKeyElem()
 		if !ok {
-			return Key{KeyQuit, 0, ""}
+			return Key{keyQuit, 0, ""}
 		}
 		if k.Kind != KeyRune {
 			break
@@ -121,7 +123,7 @@ func readKey() Key {
 		//inter.WriteRune(k.Rune)
 		k, ok = readKeyElem()
 		if !ok {
-			return Key{KeyQuit, 0, ""}
+			return Key{keyQuit, 0, ""}
 		}
 		if k.Kind != KeyRune {
 			break
@@ -139,6 +141,24 @@ func readKey() Key {
 	}
 
 	switch k.Rune {
+	case 'A':
+		return Key{KeyUp, 0, keysToString(key)}
+	case 'B':
+		return Key{KeyDown, 0, keysToString(key)}
+	case 'C':
+		return Key{KeyRight, 0, keysToString(key)}
+	case 'D':
+		return Key{KeyLeft, 0, keysToString(key)}
+	case '~':
+		p := params.String()
+		switch p {
+		case "200":
+			return Key{KeyBeginPaste, 0, keysToString(key)}
+		case "201":
+			return Key{KeyEndPaste, 0, keysToString(key)}
+		default:
+			return Key{KeyUnknown, 0, keysToString(key)}
+		}
 	case '_':
 		parts := strings.Split(params.String(), ";")
 		if len(parts) != 6 {
@@ -165,21 +185,19 @@ func readKey() Key {
 		if kd != 1 {
 			return Key{KeyUnknown, 0, ""}
 		}
-		return Key{KeyRune, rune(uc), ""}
+		c := uint16(uc)
+		if isHighSurrogate(c) {
+			keySurrogate.pending = c
+			keySurrogate.hasHigh = true
+			return Key{KeyUnknown, 0, ""}
+		}
+		if keySurrogate.hasHigh && isLowSurrogate(c) {
+			r := utf16.DecodeRune(rune(keySurrogate.pending), rune(c))
+			return Key{KeyRune, r, ""}
+		} else {
+			return Key{KeyRune, rune(c), ""}
+		}
 	}
 
 	return Key{KeyUnknown, 0, keysToString(key)}
-}
-
-var prevEscape = false
-
-func checkEscape(r rune) {
-	escape := r == 0x1b
-	if escape == prevEscape {
-		return
-	}
-	if escapeListener != nil {
-		(*escapeListener)(escape)
-	}
-	prevEscape = escape
 }

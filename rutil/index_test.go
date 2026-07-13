@@ -12,10 +12,10 @@ func TestRuneIndex(t *testing.T) {
 		r       rune
 		wantCol int
 	}{
-		{"hello world", "Hello, World!", 6, 'o', 8},
-		{"valid hello", "Hello, World!", -2, 'o', 4},
-		{"invalid hello", "Hello, World!", 14, 'o', -1},
-		{"japanese hello", "こんにちは、世界！", 2, 'は', 4},
+		{"typical", "Hello, World!", 6, 'o', 8},
+		{"negative", "Hello, World!", -2, 'o', 4},
+		{"over", "Hello, World!", 14, 'o', -1},
+		{"typical multibyte", "こんにちは、世界！", 2, 'は', 4},
 	}
 
 	for _, tt := range tests {
@@ -39,10 +39,10 @@ func TestLastRuneIndex(t *testing.T) {
 		r       rune
 		wantCol int
 	}{
-		{"hello world", "Hello, World!", 6, 'o', 4},
-		{"invalid hello", "Hello, World!", -2, 'o', -1},
-		{"valid hello", "Hello, World!", 14, 'o', 8},
-		{"japanese hello", "こんにちは、世界！", 6, 'は', 4},
+		{"typical", "Hello, World!", 6, 'o', 4},
+		{"negative", "Hello, World!", -2, 'o', -1},
+		{"over", "Hello, World!", 14, 'o', 8},
+		{"typical multibyte", "こんにちは、世界！", 6, 'は', 4},
 	}
 
 	for _, tt := range tests {

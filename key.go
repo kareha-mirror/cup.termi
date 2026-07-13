@@ -10,7 +10,9 @@ var EscapeTimeout = 100 * time.Millisecond
 type KeyKind int
 
 const (
-	KeyRune KeyKind = iota
+	keyQuit KeyKind = iota // private
+
+	KeyRune
 
 	KeyUp
 	KeyDown
@@ -21,8 +23,8 @@ const (
 	KeyEndPaste
 
 	KeyUnknown
-	KeyQuit
 
+	// w32-input-mode
 	KeyEscapeDown
 	KeyEscapeUp
 )
@@ -40,7 +42,7 @@ const RuneBackspace rune = '\b'
 const RuneDelete rune = 0x7f
 
 var keyWG sync.WaitGroup
-var keyCh chan Key
+var keyChan chan Key
 
 func InitKey() error {
 	err := initRead()
@@ -49,7 +51,7 @@ func InitKey() error {
 	}
 
 	internalInitKey()
-	keyCh = make(chan Key, 32)
+	keyChan = make(chan Key, 32)
 
 	spawnReader()
 
@@ -58,12 +60,12 @@ func InitKey() error {
 		defer keyWG.Done()
 		for {
 			key := readKey()
-			if key.Kind == KeyQuit {
+			if key.Kind == keyQuit {
 				break
 			}
-			keyCh <- key
+			keyChan <- key
 		}
-		close(keyCh)
+		close(keyChan)
 	}()
 
 	return nil
@@ -79,7 +81,7 @@ func FinishKey() error {
 }
 
 func Keys() chan Key {
-	return keyCh
+	return keyChan
 }
 
 //
@@ -92,4 +94,17 @@ var escapeListener EscapeListener
 
 func SetEscapeListener(f EscapeListener) {
 	escapeListener = f
+}
+
+var prevEscape = false
+
+func checkEscape(r rune) {
+	escape := r == 0x1b
+	if escape == prevEscape {
+		return
+	}
+	if escapeListener != nil {
+		(*escapeListener)(escape)
+	}
+	prevEscape = escape
 }

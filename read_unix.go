@@ -75,7 +75,7 @@ func read() (byte, error) {
 					continue
 				}
 				b := readBuf[0]
-				checkEscape(b)
+				checkEscape(rune(b))
 				return b, nil
 			}
 		}
@@ -92,9 +92,9 @@ func spawnReader() {
 			if err != nil {
 				break
 			}
-			readCh <- b
+			readChan <- b
 		}
 		close(readDone)
-		close(readCh)
+		close(readChan)
 	}()
 }

@@ -12,10 +12,11 @@ func TestRuneAt(t *testing.T) {
 		col      int
 		wantRune rune
 	}{
-		{"null string", "", 0, utf8.RuneError},
-		{"hello world", "Hello, World!", 9, 'r'},
-		{"japanese hello", "こんにちは、世界！", 4, 'は'},
-		{"invalid hello", "Hello, World!", -2, utf8.RuneError},
+		{"empty", "", 0, utf8.RuneError},
+		{"found", "Hello, World!", 9, 'r'},
+		{"found multibyte", "こんにちは、世界！", 4, 'は'},
+		{"negative", "Hello, World!", -2, utf8.RuneError},
+		{"over", "Hello, World!", 14, utf8.RuneError},
 	}
 
 	for _, tt := range tests {

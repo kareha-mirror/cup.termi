@@ -8,12 +8,12 @@ import (
 	"unicode/utf8"
 )
 
-var readCh chan byte
+var readChan chan byte
 var readDone chan struct{}
 var keyBuf []byte
 
 func internalInitKey() {
-	readCh = make(chan byte, 32)
+	readChan = make(chan byte, 32)
 	readDone = make(chan struct{})
 	keyBuf = make([]byte, 0)
 }
@@ -25,7 +25,7 @@ func readByte() (byte, bool) {
 		return b, true
 	}
 	select {
-	case b := <-readCh:
+	case b := <-readChan:
 		return b, true
 	case <-readDone:
 		return 0, false
@@ -40,7 +40,7 @@ func readByteTimeout(d time.Duration) (byte, bool) {
 	}
 
 	select {
-	case b := <-readCh:
+	case b := <-readChan:
 		return b, true
 	case <-readDone:
 		return 0, false
@@ -67,7 +67,7 @@ func runeSize(b byte) int {
 func readKey() Key {
 	b, ok := readByte()
 	if !ok {
-		return Key{KeyQuit, 0, ""}
+		return Key{keyQuit, 0, ""}
 	}
 	if b != 0x1b { // Escape
 		expected := runeSize(b)
@@ -80,7 +80,7 @@ func readKey() Key {
 			for i := 1; i < len(full); i++ {
 				b, ok = readByte()
 				if !ok {
-					return Key{KeyQuit, 0, ""}
+					return Key{keyQuit, 0, ""}
 				}
 				full[i] = b
 			}
@@ -97,7 +97,7 @@ func readKey() Key {
 	if EscapeTimeout <= 0 {
 		b, ok = readByte()
 		if !ok {
-			return Key{KeyQuit, 0, ""}
+			return Key{keyQuit, 0, ""}
 		}
 	} else {
 		var ok bool
@@ -117,7 +117,7 @@ func readKey() Key {
 	for {
 		b, ok = readByte()
 		if !ok {
-			return Key{KeyQuit, 0, ""}
+			return Key{keyQuit, 0, ""}
 		}
 		key = append(key, b)
 		if b < 0x30 || b > 0x3f {
@@ -134,7 +134,7 @@ func readKey() Key {
 		//inter.WriteRune(rune(b))
 		b, ok = readByte()
 		if !ok {
-			return Key{KeyQuit, 0, ""}
+			return Key{keyQuit, 0, ""}
 		}
 		key = append(key, b)
 	}
@@ -166,17 +166,4 @@ func readKey() Key {
 	}
 
 	return Key{KeyUnknown, 0, string(key)}
-}
-
-var prevEscape = false
-
-func checkEscape(b byte) {
-	escape := b == 0x1b
-	if escape == prevEscape {
-		return
-	}
-	if escapeListener != nil {
-		(*escapeListener)(escape)
-	}
-	prevEscape = escape
 }
