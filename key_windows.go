@@ -141,24 +141,6 @@ func readKey() Key {
 	}
 
 	switch k.Rune {
-	case 'A':
-		return Key{KeyUp, 0, keysToString(key)}
-	case 'B':
-		return Key{KeyDown, 0, keysToString(key)}
-	case 'C':
-		return Key{KeyRight, 0, keysToString(key)}
-	case 'D':
-		return Key{KeyLeft, 0, keysToString(key)}
-	case '~':
-		p := params.String()
-		switch p {
-		case "200":
-			return Key{KeyBeginPaste, 0, keysToString(key)}
-		case "201":
-			return Key{KeyEndPaste, 0, keysToString(key)}
-		default:
-			return Key{KeyUnknown, 0, keysToString(key)}
-		}
 	case '_':
 		parts := strings.Split(params.String(), ";")
 		if len(parts) != 6 {
