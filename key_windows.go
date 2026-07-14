@@ -16,16 +16,16 @@ var keyBuf []Key
 func internalInitKey() {
 	readChan = make(chan Key, 32)
 	readDone = make(chan struct{})
+	keyBuf = nil
 	keySurrogate = surrogateState{}
 }
 
-func readKeyElem() (Key, bool) {
+func readWinKey() (Key, bool) {
 	if len(keyBuf) > 0 {
 		k := keyBuf[0]
 		keyBuf = keyBuf[1:]
 		return k, true
 	}
-
 	select {
 	case k := <-readChan:
 		return k, true
@@ -34,13 +34,12 @@ func readKeyElem() (Key, bool) {
 	}
 }
 
-func readKeyElemTimeout(d time.Duration) (Key, bool) {
+func readWinKeyTimeout(d time.Duration) (Key, bool) {
 	if len(keyBuf) > 0 {
 		k := keyBuf[0]
 		keyBuf = keyBuf[1:]
 		return k, true
 	}
-
 	select {
 	case k := <-readChan:
 		return k, true
@@ -63,7 +62,7 @@ func keysToString(keys []Key) string {
 }
 
 func readKey() Key {
-	k, ok := readKeyElem()
+	k, ok := readWinKey()
 	if !ok {
 		return Key{keyQuit, 0, ""}
 	}
@@ -74,41 +73,41 @@ func readKey() Key {
 		return k
 	}
 
-	key := []Key{k}
+	keys := []Key{k}
 
 	if EscapeTimeout <= 0 {
-		k, ok = readKeyElem()
+		k, ok = readWinKey()
 		if !ok {
 			return Key{keyQuit, 0, ""}
 		}
 	} else {
 		var ok bool
-		k, ok = readKeyElemTimeout(EscapeTimeout)
+		k, ok = readWinKeyTimeout(EscapeTimeout)
 		if !ok {
-			return key[0]
+			return keys[0]
 		}
 	}
 
-	key = append(key, k)
+	keys = append(keys, k)
 	if k.Kind != KeyRune {
-		keyBuf = append(keyBuf, key[1:]...)
-		return key[0]
+		keyBuf = append(keyBuf, keys[1:]...)
+		return keys[0]
 	}
 	if k.Rune != '[' {
-		keyBuf = append(keyBuf, key[1:]...)
-		return key[0]
+		keyBuf = append(keyBuf, keys[1:]...)
+		return keys[0]
 	}
 
 	params := strings.Builder{}
 	for {
-		k, ok = readKeyElem()
+		k, ok = readWinKey()
 		if !ok {
 			return Key{keyQuit, 0, ""}
 		}
 		if k.Kind != KeyRune {
 			break
 		}
-		key = append(key, k)
+		keys = append(keys, k)
 		if k.Rune < 0x30 || k.Rune > 0x3f {
 			break
 		}
@@ -121,47 +120,47 @@ func readKey() Key {
 			break
 		}
 		//inter.WriteRune(k.Rune)
-		k, ok = readKeyElem()
+		k, ok = readWinKey()
 		if !ok {
 			return Key{keyQuit, 0, ""}
 		}
 		if k.Kind != KeyRune {
 			break
 		}
-		key = append(key, k)
+		keys = append(keys, k)
 	}
 
 	if k.Kind != KeyRune {
-		keyBuf = append(keyBuf, key[1:]...)
-		return key[0]
+		keyBuf = append(keyBuf, keys[1:]...)
+		return keys[0]
 	}
 	if k.Rune < 0x40 || k.Rune > 0x7e { // final
-		keyBuf = append(keyBuf, key[1:]...)
-		return key[0]
+		keyBuf = append(keyBuf, keys[1:]...)
+		return keys[0]
 	}
 
 	switch k.Rune {
 	case '_':
 		parts := strings.Split(params.String(), ";")
 		if len(parts) != 6 {
-			return Key{KeyUnknown, 0, keysToString(key)}
+			return Key{KeyUnknown, 0, keysToString(keys)}
 		}
 		uc, err := strconv.ParseUint(parts[2], 10, 32)
 		if err != nil {
-			return Key{KeyUnknown, 0, keysToString(key)}
+			return Key{KeyUnknown, 0, keysToString(keys)}
 		}
 		if uc == 0 {
-			return Key{KeyUnknown, 0, keysToString(key)}
+			return Key{KeyUnknown, 0, keysToString(keys)}
 		}
 		kd, err := strconv.ParseUint(parts[3], 10, 32)
 		if err != nil {
-			return Key{KeyUnknown, 0, keysToString(key)}
+			return Key{KeyUnknown, 0, keysToString(keys)}
 		}
 		if uc == 0x1b {
 			if kd == 1 {
-				return Key{KeyEscapeDown, 0, keysToString(key)}
+				return Key{KeyEscapeDown, 0, keysToString(keys)}
 			} else {
-				return Key{KeyEscapeUp, 0, keysToString(key)}
+				return Key{KeyEscapeUp, 0, keysToString(keys)}
 			}
 		}
 		if kd != 1 {
@@ -181,5 +180,5 @@ func readKey() Key {
 		}
 	}
 
-	return Key{KeyUnknown, 0, keysToString(key)}
+	return Key{KeyUnknown, 0, keysToString(keys)}
 }

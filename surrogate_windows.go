@@ -7,7 +7,7 @@ type surrogateState struct {
 	hasHigh bool
 }
 
-var elemSurrogate surrogateState
+var winSurrogate surrogateState
 var keySurrogate surrogateState
 
 func isHighSurrogate(r uint16) bool {

@@ -15,7 +15,7 @@ var keyBuf []byte
 func internalInitKey() {
 	readChan = make(chan byte, 32)
 	readDone = make(chan struct{})
-	keyBuf = make([]byte, 0)
+	keyBuf = nil
 }
 
 func readByte() (byte, bool) {
@@ -38,7 +38,6 @@ func readByteTimeout(d time.Duration) (byte, bool) {
 		keyBuf = keyBuf[1:]
 		return b, true
 	}
-
 	select {
 	case b := <-readChan:
 		return b, true
@@ -92,7 +91,7 @@ func readKey() Key {
 		return Key{KeyRune, r, ""}
 	}
 
-	key := []byte{b}
+	keys := []byte{b}
 
 	if EscapeTimeout <= 0 {
 		b, ok = readByte()
@@ -103,14 +102,14 @@ func readKey() Key {
 		var ok bool
 		b, ok = readByteTimeout(EscapeTimeout)
 		if !ok {
-			return Key{KeyRune, rune(key[0]), string(key)}
+			return Key{KeyRune, rune(keys[0]), string(keys)}
 		}
 	}
 
-	key = append(key, b)
+	keys = append(keys, b)
 	if b != '[' {
-		keyBuf = append(keyBuf, key[1:]...)
-		return Key{KeyRune, rune(key[0]), ""}
+		keyBuf = append(keyBuf, keys[1:]...)
+		return Key{KeyRune, rune(keys[0]), ""}
 	}
 
 	params := strings.Builder{}
@@ -119,7 +118,7 @@ func readKey() Key {
 		if !ok {
 			return Key{keyQuit, 0, ""}
 		}
-		key = append(key, b)
+		keys = append(keys, b)
 		if b < 0x30 || b > 0x3f {
 			break
 		}
@@ -136,34 +135,34 @@ func readKey() Key {
 		if !ok {
 			return Key{keyQuit, 0, ""}
 		}
-		key = append(key, b)
+		keys = append(keys, b)
 	}
 
 	if b < 0x40 || b > 0x7e { // final
-		keyBuf = append(keyBuf, key[1:]...)
-		return Key{KeyRune, rune(key[0]), ""}
+		keyBuf = append(keyBuf, keys[1:]...)
+		return Key{KeyRune, rune(keys[0]), ""}
 	}
 
 	switch b {
 	case 'A':
-		return Key{KeyUp, 0, string(key)}
+		return Key{KeyUp, 0, string(keys)}
 	case 'B':
-		return Key{KeyDown, 0, string(key)}
+		return Key{KeyDown, 0, string(keys)}
 	case 'C':
-		return Key{KeyRight, 0, string(key)}
+		return Key{KeyRight, 0, string(keys)}
 	case 'D':
-		return Key{KeyLeft, 0, string(key)}
+		return Key{KeyLeft, 0, string(keys)}
 	case '~':
 		p := params.String()
 		switch p {
 		case "200":
-			return Key{KeyBeginPaste, 0, string(key)}
+			return Key{KeyBeginPaste, 0, string(keys)}
 		case "201":
-			return Key{KeyEndPaste, 0, string(key)}
+			return Key{KeyEndPaste, 0, string(keys)}
 		default:
-			return Key{KeyUnknown, 0, string(key)}
+			return Key{KeyUnknown, 0, string(keys)}
 		}
 	}
 
-	return Key{KeyUnknown, 0, string(key)}
+	return Key{KeyUnknown, 0, string(keys)}
 }

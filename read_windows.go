@@ -56,7 +56,7 @@ func ReadConsoleInput(
 func initRead() error {
 	var err error
 	stopEvent, err = windows.CreateEvent(nil, 1, 0, nil)
-	elemSurrogate = surrogateState{}
+	winSurrogate = surrogateState{}
 	return err
 }
 
@@ -88,12 +88,12 @@ func read() (Key, bool, error) {
 				return Key{}, false, nil
 			}
 			if isHighSurrogate(c) {
-				elemSurrogate.pending = c
-				elemSurrogate.hasHigh = true
+				winSurrogate.pending = c
+				winSurrogate.hasHigh = true
 				return Key{}, false, nil
 			}
-			if elemSurrogate.hasHigh && isLowSurrogate(c) {
-				r := utf16.DecodeRune(rune(elemSurrogate.pending), rune(c))
+			if winSurrogate.hasHigh && isLowSurrogate(c) {
+				r := utf16.DecodeRune(rune(winSurrogate.pending), rune(c))
 				checkEscape(r)
 				return Key{KeyRune, r, ""}, true, nil
 			} else {
