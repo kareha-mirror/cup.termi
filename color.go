@@ -65,25 +65,27 @@ func (c Color) RGB() (uint8, uint8, uint8) {
 	return c.r, c.g, c.b
 }
 
-// normal
-var Black = Color{false, true, 0, 0, 0, 0}
-var Red = Color{false, true, 1, 128, 0, 0}
-var Green = Color{false, true, 2, 0, 128, 0}
-var Yellow = Color{false, true, 3, 128, 128, 0}
-var Blue = Color{false, true, 4, 0, 0, 128}
-var Magenta = Color{false, true, 5, 128, 0, 128}
-var Cyan = Color{false, true, 6, 0, 128, 128}
-var White = Color{false, true, 7, 192, 192, 192}
+var (
+	// normal
+	Black   = Color{false, true, 0, 0, 0, 0}
+	Red     = Color{false, true, 1, 128, 0, 0}
+	Green   = Color{false, true, 2, 0, 128, 0}
+	Yellow  = Color{false, true, 3, 128, 128, 0}
+	Blue    = Color{false, true, 4, 0, 0, 128}
+	Magenta = Color{false, true, 5, 128, 0, 128}
+	Cyan    = Color{false, true, 6, 0, 128, 128}
+	White   = Color{false, true, 7, 192, 192, 192}
 
-// bright
-var BrightBlack = Color{false, true, 8, 128, 128, 128}
-var BrightRed = Color{false, true, 9, 255, 0, 0}
-var BrightGreen = Color{false, true, 10, 0, 255, 0}
-var BrightYellow = Color{false, true, 11, 255, 255, 0}
-var BrightBlue = Color{false, true, 12, 0, 0, 255}
-var BrightMagenta = Color{false, true, 13, 255, 0, 255}
-var BrightCyan = Color{false, true, 14, 0, 255, 255}
-var BrightWhite = Color{false, true, 15, 255, 255, 255}
+	// bright
+	BrightBlack   = Color{false, true, 8, 128, 128, 128}
+	BrightRed     = Color{false, true, 9, 255, 0, 0}
+	BrightGreen   = Color{false, true, 10, 0, 255, 0}
+	BrightYellow  = Color{false, true, 11, 255, 255, 0}
+	BrightBlue    = Color{false, true, 12, 0, 0, 255}
+	BrightMagenta = Color{false, true, 13, 255, 0, 255}
+	BrightCyan    = Color{false, true, 14, 0, 255, 255}
+	BrightWhite   = Color{false, true, 15, 255, 255, 255}
+)
 
 var palette = make([]Color, 256)
 

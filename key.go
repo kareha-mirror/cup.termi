@@ -35,14 +35,18 @@ type Key struct {
 	Raw  string
 }
 
-const RuneEscape rune = 0x1b
-const RuneEnter rune = '\r'
-const RuneNewline rune = '\n'
-const RuneBackspace rune = '\b'
-const RuneDelete rune = 0x7f
+const (
+	RuneEscape    rune = 0x1b
+	RuneEnter     rune = '\r'
+	RuneNewline   rune = '\n'
+	RuneBackspace rune = '\b'
+	RuneDelete    rune = 0x7f
+)
 
-var keyWG sync.WaitGroup
-var keyChan chan Key
+var (
+	keyWG   sync.WaitGroup
+	keyChan chan Key
+)
 
 func InitKey() error {
 	err := initRead()

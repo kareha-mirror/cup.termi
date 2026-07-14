@@ -1,8 +1,6 @@
 package termi
 
-import (
-	"unicode"
-)
+import "unicode"
 
 var TabWidth = 4
 

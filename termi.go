@@ -31,20 +31,30 @@ func Cooked() {
 	state = nil
 }
 
-const SetAlternate = "\x1b[?1049h"
-const ResetAlternate = "\x1b[?1049l"
+const (
+	SetAlternate   = "\x1b[?1049h"
+	ResetAlternate = "\x1b[?1049l"
 
-const Clear = "\x1b[2J"
+	Clear      = "\x1b[2J"
+	HomeCursor = "\x1b[H"
 
-const HomeCursor = "\x1b[H"
+	HideCursor = "\x1b[?25l"
+	ShowCursor = "\x1b[?25h"
+
+	SetInvert   = "\x1b[7m"
+	ResetInvert = "\x1b[27m"
+
+	SaveCursor = "\x1b[s"
+	LoadCursor = "\x1b[u"
+
+	ScrollReset = "\x1b[r"
+
+	ClearTail = "\x1b[K"
+)
 
 func MoveCursor(x, y int) string {
 	return fmt.Sprintf("\x1b[%d;%dH", y+1, x+1)
 }
-
-const HideCursor = "\x1b[?25l"
-
-const ShowCursor = "\x1b[?25h"
 
 func Size() (int, int) {
 	w, h, err := term.GetSize(int(os.Stdout.Fd()))
@@ -60,18 +70,6 @@ func Size() (int, int) {
 	return w, h
 }
 
-const SetInvert = "\x1b[7m"
-
-const ResetInvert = "\x1b[27m"
-
-const SaveCursor = "\x1b[s"
-
-const LoadCursor = "\x1b[u"
-
 func ScrollRange(top int, size int) string {
 	return fmt.Sprintf("\x1b[%d;%dr", top+1, top+size)
 }
-
-const ScrollReset = "\x1b[r"
-
-const ClearTail = "\x1b[K"

@@ -8,9 +8,11 @@ import (
 	"unicode/utf8"
 )
 
-var readChan chan byte
-var readDone chan struct{}
-var keyBuf []byte
+var (
+	readChan chan byte
+	readDone chan struct{}
+	keyBuf   []byte
+)
 
 func internalInitKey() {
 	readChan = make(chan byte, 32)

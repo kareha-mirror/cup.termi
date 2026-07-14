@@ -9,10 +9,12 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-var readWakerR int
-var readWakerW int
-var readFDs []unix.PollFd
-var readBuf [1]byte
+var (
+	readWakerR int
+	readWakerW int
+	readFDs    []unix.PollFd
+	readBuf    [1]byte
+)
 
 func initRead() error {
 	var pipe [2]int

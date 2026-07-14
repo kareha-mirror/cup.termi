@@ -7,8 +7,10 @@ type surrogateState struct {
 	hasHigh bool
 }
 
-var winSurrogate surrogateState
-var keySurrogate surrogateState
+var (
+	winSurrogate surrogateState
+	keySurrogate surrogateState
+)
 
 func isHighSurrogate(r uint16) bool {
 	return 0xd800 <= r && r <= 0xdbff
