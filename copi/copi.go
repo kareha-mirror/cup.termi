@@ -1,25 +1,25 @@
 package copi
 
 import (
+	"sync"
+
 	"golang.design/x/clipboard"
 )
 
-var initialized = false
+var (
+	once    sync.Once
+	initErr error
+)
 
 func ensureInitialized() error {
-	if initialized {
-		return nil
-	}
-	if err := clipboard.Init(); err != nil {
-		return err
-	}
-	initialized = true
-	return nil
+	once.Do(func() {
+		initErr = clipboard.Init()
+	})
+	return initErr
 }
 
 func Read() (string, error) {
-	err := ensureInitialized()
-	if err != nil {
+	if err := ensureInitialized(); err != nil {
 		return "", err
 	}
 	b := clipboard.Read(clipboard.FmtText)
@@ -27,8 +27,7 @@ func Read() (string, error) {
 }
 
 func Write(s string) error {
-	err := ensureInitialized()
-	if err != nil {
+	if err := ensureInitialized(); err != nil {
 		return err
 	}
 	clipboard.Write(clipboard.FmtText, []byte(s))
