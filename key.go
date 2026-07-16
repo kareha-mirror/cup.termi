@@ -27,6 +27,7 @@ const (
 	// w32-input-mode
 	KeyEscapeDown
 	KeyEscapeUp
+	KeyResized
 )
 
 type Key struct {

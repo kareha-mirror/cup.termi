@@ -27,7 +27,10 @@ type KeyEventRecord struct {
 	ControlKeyState uint32
 }
 
-const EventTypeKey = 0x0001
+const (
+	EventTypeKey     = 0x0001
+	EventTypeResized = 0x0004
+)
 
 type InputRecord struct {
 	EventType uint16
@@ -77,7 +80,9 @@ func read() (Key, bool, error) {
 			return Key{}, false, err
 		}
 		if n == 1 {
-			if rec.EventType != EventTypeKey {
+			if rec.EventType == EventTypeResized {
+				return Key{KeyResized, 0, ""}, true, nil
+			} else if rec.EventType != EventTypeKey {
 				return Key{}, false, nil
 			}
 			if rec.KeyEvent.KeyDown == 0 {
