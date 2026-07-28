@@ -36,3 +36,12 @@ func Lock(cfgDir string) error {
 func Unlock(cfgDir string) error {
 	return os.Remove(lockDirPath(cfgDir))
 }
+
+func ForceUnlock(cfgDir string) error {
+	path := lockDirPath(cfgDir)
+	_, err := os.Stat(path)
+	if err != nil { // not exist
+		return nil
+	}
+	return os.Remove(path)
+}
