@@ -8,8 +8,8 @@ tasks:
       - go build . ./copi ./lock ./pity ./rbuf ./rkind ./rutil ./shutil ./suspend ./tmux
   clean:
     cmds:
-      - go run ./cmd/rm termi
-      - go run ./cmd/rm termi.exe
+      - rm -f termi
+      - rm -f termi.exe
   test:
     cmds:
       - go test ./...
